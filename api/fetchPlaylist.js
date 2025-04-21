@@ -1,5 +1,3 @@
-import fetch from 'node-fetch';
-
 export default async function handler(req, res) {
     const { playlistId } = req.query;
     const API_KEY = process.env.YOUTUBE_API_KEY;
