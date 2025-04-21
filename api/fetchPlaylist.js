@@ -13,14 +13,6 @@ export default async function handler(req, res) {
       do {
         const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${encodeURIComponent(playlistId)}&maxResults=50&pageToken=${nextPageToken}&key=${API_KEY}`;
         const response = await fetch(url);
-
-          if (!response.ok) {
-  const text = await response.text(); 
-  console.error("Raw error response from YouTube API:", text);
-  throw new Error(`YouTube API call failed: ${response.status}`);
-}
-
-          
         const data = await response.json();
   
        if (data.error) {
