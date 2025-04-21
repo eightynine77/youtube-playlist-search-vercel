@@ -15,7 +15,7 @@ export default async function handler(req, res) {
         const response = await fetch(url);
 
           if (!response.ok) {
-  const text = await response.text(); // read raw response
+  const text = await response.text(); 
   console.error("Raw error response from YouTube API:", text);
   throw new Error(`YouTube API call failed: ${response.status}`);
 }
