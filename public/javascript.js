@@ -13,7 +13,7 @@ document.getElementById('searchForm').addEventListener('submit', async function(
     }
   
     try {
-      const response = await fetch(`/fetchPlaylist?playlistId=${encodeURIComponent(playlistId)}`);
+      const response = await fetch(`/api/fetchPlaylist?playlistId=${encodeURIComponent(playlistId)}`);
       const { items } = await response.json();
   
       let filtered = searchTerm
