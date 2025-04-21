@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>YouTube Playlist Video Search</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>YouTube Playlist Video Search</h1>
+        <form id="searchForm">
+            <label for="playlistUrl">YouTube Playlist Link:</label>
+            <input type="text" id="playlistUrl" placeholder="Paste playlist URL (e.g. https://www.youtube.com/playlist?list=...)" required>
+            <label for="searchTerm">Search Term:</label>
+            <input type="text" id="searchTerm" placeholder="Search videos by title">
+            <button type="submit">Search</button>
+        </form>
+        <ul id="results" class="video-list"></ul>
+  </div>
+
+  <script src="javascript.js"></script>
+</body>
+</html>
