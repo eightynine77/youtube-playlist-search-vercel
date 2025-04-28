@@ -4,6 +4,7 @@ document.getElementById('searchForm').addEventListener('submit', async function(
   const playlistUrl = document.getElementById('playlistUrl').value.trim();
   const searchTerm = document.getElementById('searchTerm').value.trim(); 
   const resultsContainer = document.getElementById('results');
+  resultsContainer.innerHTML = 'Loading...';
   const loadingIndicator = document.getElementById('loadingIndicator'); 
 
   if (!playlistUrl) {
