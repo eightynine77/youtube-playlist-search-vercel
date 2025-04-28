@@ -58,7 +58,6 @@ document.getElementById('searchForm').addEventListener('submit', async function(
         />
         <div class="video-info">
           <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">${title}</a>
-          <p class="video-id">Video ID: ${videoId}</p>
         </div>
       `;
       resultsContainer.appendChild(li);
