@@ -1,58 +1,73 @@
 document.getElementById('searchForm').addEventListener('submit', async function(event) {
-    event.preventDefault();
-  
-    const playlistUrl = document.getElementById('playlistUrl').value.trim();
-    const searchTerm = document.getElementById('searchTerm').value.trim().toLowerCase();
-    const resultsContainer = document.getElementById('results');
-    resultsContainer.innerHTML = 'Loading...';
-  
-    const playlistId = extractPlaylistId(playlistUrl);
-    if (!playlistId) {
-      alert("Invalid playlist URL. Make sure it includes 'list='.");
+  event.preventDefault(); 
+
+  const playlistUrl = document.getElementById('playlistUrl').value.trim();
+  const searchTerm = document.getElementById('searchTerm').value.trim(); 
+  const resultsContainer = document.getElementById('results');
+  const loadingIndicator = document.getElementById('loadingIndicator'); 
+
+  if (!playlistUrl) {
+      resultsContainer.innerHTML = '<li class="error-message">Please enter a playlist URL.</li>';
+      return;
+  }
+
+  resultsContainer.innerHTML = ''; 
+  if (loadingIndicator) loadingIndicator.style.display = 'block'; 
+
+  try {
+    const apiUrl = `/api/fetchPlaylist?playlistUrl=${encodeURIComponent(playlistUrl)}&searchTerm=${encodeURIComponent(searchTerm)}`;
+
+    const response = await fetch(apiUrl);
+
+    if (loadingIndicator) loadingIndicator.style.display = 'none';
+
+    if (!response.ok) {
+      let errorMsg = `Error: ${response.status} ${response.statusText}`;
+      try {
+          const errorData = await response.json();
+          errorMsg = `Error: ${errorData.error || 'Failed to fetch data from server.'}`;
+      } catch (e) {
+          
+      }
+      throw new Error(errorMsg);
+    }
+
+    const items = await response.json();
+
+    if (!items || items.length === 0) {
+      resultsContainer.innerHTML = `<li>No videos found matching your criteria.</li>`;
       return;
     }
-  
-    try {
-      const response = await fetch(`/api/fetchPlaylist?playlistId=${encodeURIComponent(playlistId)}`);
-      const { items } = await response.json();
-  
-      let filtered = searchTerm
-        ? items.filter(item => item.snippet.title.toLowerCase().includes(searchTerm))
-        : items;
-  
-      if (filtered.length === 0) {
-        resultsContainer.innerHTML = `<li>No videos found.</li>`;
-        return;
-      }
-  
-      resultsContainer.innerHTML = '';
-      filtered.forEach(item => {
-        const videoId = item.snippet.resourceId.videoId;
-        const title = item.snippet.title;
-        const thumbnailUrl = item.snippet.thumbnails.medium.url;
-        const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-  
-        const li = document.createElement('li');
-        li.className = 'video-item';
-        li.innerHTML = `
-          <img src="${thumbnailUrl}" alt="${title} thumbnail" />
-          <div class="video-info">
-            <a href="${videoUrl}" target="_blank">${title}</a>
-          </div>
-        `;
-        resultsContainer.appendChild(li);
-      });
-    } catch (err) {
-      console.error(err);
-      resultsContainer.innerHTML = `<li>Error: ${err.message}</li>`;
-    }
-  });
-  
-  function extractPlaylistId(url) {
-    try {
-      const parsed = new URL(url);
-      return parsed.searchParams.get("list");
-    } catch (e) {
-      return null;
-    }
-  }  
+
+    resultsContainer.innerHTML = '';
+
+    items.forEach(item => {
+      const { videoId, title = 'Untitled Video', thumbnailUrl, videoUrl } = item;
+
+      if (!videoUrl) return;
+
+      const li = document.createElement('li');
+      li.className = 'video-item'; 
+
+      const imageSrc = thumbnailUrl || `https://placehold.co/120x90/eee/aaa?text=No+Thumb`;
+
+      li.innerHTML = `
+        <img
+          src="${imageSrc}"
+          alt="${title} thumbnail"
+          onerror="this.onerror=null; this.src='https://placehold.co/120x90/eee/aaa?text=Error';" 
+        />
+        <div class="video-info">
+          <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">${title}</a>
+          <p class="video-id">Video ID: ${videoId}</p>
+        </div>
+      `;
+      resultsContainer.appendChild(li);
+    });
+
+  } catch (err) {
+    console.error("Frontend Error:", err);
+    if (loadingIndicator) loadingIndicator.style.display = 'none';
+    resultsContainer.innerHTML = `<li class="error-message">${err.message}</li>`;
+  }
+});
