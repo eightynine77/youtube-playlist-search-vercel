@@ -48,14 +48,10 @@ document.getElementById('searchForm').addEventListener('submit', async function(
       const li = document.createElement('li');
       li.className = 'video-item';
 
-      const imageSrc = thumbnailUrl || `https://placehold.co/120x90/eee/aaa?text=No+Thumb`;
+      const imageSrc = thumbnailUrl;
 
       li.innerHTML = `
-        <img
-          src="${imageSrc}"
-          alt="${title} thumbnail"
-          onerror="this.onerror=null; this.src='https://placehold.co/120x90/eee/aaa?text=Error';" 
-        />
+        <img src="${imageSrc}" alt="${title} thumbnail" />
         <div class="video-info">
           <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">${title}</a>
         </div>
