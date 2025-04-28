@@ -2,7 +2,6 @@ const API_KEY = process.env.YOUTUBE_API_KEY;
 
 function extractPlaylistId(url) {
   try {
-    // Check if the input is a valid URL string
     if (!url || typeof url !== 'string') {
       return null;
     }
@@ -15,7 +14,7 @@ function extractPlaylistId(url) {
     return parsedUrl.searchParams.get("list");
   } catch (e) {
     console.error("Error parsing URL:", e);
-    return null; // Return null if URL parsing fails
+    return null; 
   }
 }
 
@@ -36,7 +35,6 @@ async function fetchAllVideos(playlistId) {
 
       if (data.error) {
         console.error("YouTube API Error:", data.error);
-        // Provide a more specific error message if possible
         throw new Error(`YouTube API Error: ${data.error.message} (Code: ${data.error.code})`);
       }
 
@@ -47,7 +45,6 @@ async function fetchAllVideos(playlistId) {
       nextPageToken = data.nextPageToken || '';
 
     } catch (fetchError) {
-        // Handle network errors or issues with the fetch call itself
         console.error("Error fetching playlist items:", fetchError);
         throw new Error(`Failed to fetch data from YouTube API. ${fetchError.message}`);
     }
@@ -72,7 +69,7 @@ export default async function handler(request, response) {
 
   const { searchParams } = new URL(request.url, `http://${request.headers.host}`);
   const playlistUrl = searchParams.get('playlistUrl');
-  const searchTerm = searchParams.get('searchTerm')?.toLowerCase() || ''; // Default to empty string if not provided
+  const searchTerm = searchParams.get('searchTerm')?.toLowerCase() || ''; 
 
   if (!playlistUrl) {
     return response.status(400).json({ error: "Missing 'playlistUrl' query parameter." });
@@ -92,12 +89,10 @@ export default async function handler(request, response) {
         )
       : allItems;
 
-    // Format the results to send back to the client
     const results = filteredItems.map(item => ({
         videoId: item.snippet?.resourceId?.videoId,
         title: item.snippet?.title,
         thumbnailUrl: item.snippet?.thumbnails?.medium?.url,
-        // Ensure videoId exists before creating the URL
         videoUrl: item.snippet?.resourceId?.videoId
           ? `https://www.youtube.com/watch?v=${item.snippet.resourceId.videoId}`
           : null 
@@ -106,9 +101,7 @@ export default async function handler(request, response) {
     response.status(200).json(results);
 
   } catch (error) {
-    // Handle errors during API fetching or processing
     console.error("Handler Error:", error);
-    // Send a generic server error message back, hiding specific details
     response.status(500).json({ error: `An error occurred while fetching playlist videos. ${error.message}` });
   }
 }
