@@ -21,7 +21,7 @@ document.getElementById('searchForm').addEventListener('submit', async function(
 
   try {
     // Construct the URL for your backend API endpoint
-    const apiUrl = `/api/search?playlistUrl=${encodeURIComponent(playlistUrl)}&searchTerm=${encodeURIComponent(searchTerm)}`;
+    const apiUrl = `/api/fetchPlaylist?playlistUrl=${encodeURIComponent(playlistUrl)}&searchTerm=${encodeURIComponent(searchTerm)}`;
 
     // Fetch data from your backend API
     const response = await fetch(apiUrl);
