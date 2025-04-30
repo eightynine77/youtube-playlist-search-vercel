@@ -84,66 +84,59 @@ async function fetchAllVideos(playlistId) {
  * Expects 'playlistUrl' and optional 'searchTerm' query parameters.
  */
 export default async function handler(request, response) {
-  // Allow requests from any origin (adjust in production if needed)
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Handle OPTIONS preflight request for CORS
-  if (request.method === 'OPTIONS') {
-    return response.status(200).end();
-  }
+  if (request.method === 'OPTIONS') return response.status(200).end();
+  if (request.method !== 'GET') return response.status(405).json({ error: 'Method Not Allowed' });
 
-  // Only allow GET requests
-  if (request.method !== 'GET') {
-    return response.status(405).json({ error: 'Method Not Allowed' });
-  }
-
-  // Get query parameters from the request URL
   const { searchParams } = new URL(request.url, `http://${request.headers.host}`);
   const playlistUrl = searchParams.get('playlistUrl');
-  const searchTerm = searchParams.get('searchTerm')?.toLowerCase() || ''; // Default to empty string if not provided
+  const searchTerm = searchParams.get('searchTerm')?.toLowerCase() || '';
+  const pageToken = searchParams.get('pageToken') || '';
 
-  // Validate playlistUrl
   if (!playlistUrl) {
     return response.status(400).json({ error: "Missing 'playlistUrl' query parameter." });
   }
 
-  // Extract playlist ID
   const playlistId = extractPlaylistId(playlistUrl);
   if (!playlistId) {
-    return response.status(400).json({ error: "Invalid playlist URL. Make sure it's a valid YouTube URL with a 'list=' parameter." });
+    return response.status(400).json({ error: "Invalid playlist URL." });
   }
 
-  try {
-    // Fetch all videos from the playlist
-    const allItems = await fetchAllVideos(playlistId);
+  const apiUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${encodeURIComponent(playlistId)}&maxResults=50&pageToken=${pageToken}&key=${API_KEY}`;
 
-    // Filter items based on the search term (if provided)
-    let filteredItems = searchTerm
-      ? allItems.filter(item =>
+  try {
+    const apiResponse = await fetch(apiUrl);
+    const data = await apiResponse.json();
+
+    if (data.error) {
+      throw new Error(`YouTube API Error: ${data.error.message}`);
+    }
+
+    const filteredItems = searchTerm
+      ? data.items.filter(item =>
           item.snippet?.title?.toLowerCase().includes(searchTerm)
         )
-      : allItems;
+      : data.items;
 
-    // Format the results to send back to the client
     const results = filteredItems.map(item => ({
-        videoId: item.snippet?.resourceId?.videoId,
-        title: item.snippet?.title,
-        thumbnailUrl: item.snippet?.thumbnails?.medium?.url,
-        // Ensure videoId exists before creating the URL
-        videoUrl: item.snippet?.resourceId?.videoId
-          ? `https://www.youtube.com/watch?v=${item.snippet.resourceId.videoId}`
-          : null // Or provide a placeholder/error indicator
-    })).filter(item => item.videoId && item.title); // Filter out items missing essential data
+      videoId: item.snippet?.resourceId?.videoId,
+      title: item.snippet?.title,
+      thumbnailUrl: item.snippet?.thumbnails?.medium?.url,
+      videoUrl: item.snippet?.resourceId?.videoId
+        ? `https://www.youtube.com/watch?v=${item.snippet.resourceId.videoId}`
+        : null,
+    })).filter(item => item.videoId && item.title);
 
-    // Send the formatted results as JSON
-    response.status(200).json(results);
+    return response.status(200).json({
+      items: results,
+      nextPageToken: data.nextPageToken || null
+    });
 
   } catch (error) {
-    // Handle errors during API fetching or processing
     console.error("Handler Error:", error);
-    // Send a generic server error message back, hiding specific details
-    response.status(500).json({ error: `An error occurred while fetching playlist videos. ${error.message}` });
+    return response.status(500).json({ error: error.message });
   }
 }
