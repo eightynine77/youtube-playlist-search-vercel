@@ -1,45 +1,43 @@
 let nextPageToken = null;
-let lastPlaylistUrl = '';
-let lastSearchTerm = '';
+let currentPlaylistUrl = '';
+let currentSearchTerm = '';
 
-const resultsContainer = document.getElementById('results');
-const searchForm = document.getElementById('searchForm');
-
-const loadMoreButton = document.createElement('button');
-loadMoreButton.textContent = 'Load More';
-loadMoreButton.className = 'load-more-btn';
-loadMoreButton.style.display = 'none'; // initially hidden
-loadMoreButton.addEventListener('click', async () => {
-  loadMoreButton.textContent = 'Loading...';
-  await fetchAndDisplayVideos(lastPlaylistUrl, lastSearchTerm, nextPageToken);
-  loadMoreButton.textContent = 'Load More';
-});
-
-resultsContainer.after(loadMoreButton);
-
-searchForm.addEventListener('submit', async function (event) {
+document.getElementById('searchForm').addEventListener('submit', async function (event) {
   event.preventDefault();
 
-  const playlistUrl = document.getElementById('playlistUrl').value.trim();
-  const searchTerm = document.getElementById('searchTerm').value.trim();
+  currentPlaylistUrl = document.getElementById('playlistUrl').value.trim();
+  currentSearchTerm = document.getElementById('searchTerm').value.trim();
+  nextPageToken = null; 
 
-  if (!playlistUrl) {
+  const resultsContainer = document.getElementById('results');
+  resultsContainer.innerHTML = '<li class="loading-message">Loading...</li>';
+
+  await fetchAndRenderVideos(true); 
+});
+
+async function fetchAndRenderVideos(isFresh = false, fetchAll = false) {
+  const resultsContainer = document.getElementById('results');
+
+  if (!currentPlaylistUrl) {
     resultsContainer.innerHTML = '<li class="error-message">Please enter a playlist URL.</li>';
-    loadMoreButton.style.display = 'none';
     return;
   }
 
-  resultsContainer.innerHTML = '<li class="loading-message">Loading...</li>';
-  nextPageToken = null; // reset
-  lastPlaylistUrl = playlistUrl;
-  lastSearchTerm = searchTerm;
-
-  await fetchAndDisplayVideos(playlistUrl, searchTerm, null, true);
-});
-
-async function fetchAndDisplayVideos(playlistUrl, searchTerm, pageToken = null, isNewSearch = false) {
   try {
-    const apiUrl = `/api/fetchPlaylist?playlistUrl=${encodeURIComponent(playlistUrl)}&searchTerm=${encodeURIComponent(searchTerm)}${pageToken ? `&pageToken=${pageToken}` : ''}`;
+    const params = new URLSearchParams({
+      playlistUrl: currentPlaylistUrl,
+      searchTerm: currentSearchTerm
+    });
+
+    if (nextPageToken) {
+      params.append('pageToken', nextPageToken);
+    }
+
+    if (fetchAll) {
+      params.append('fetchAll', 'true');
+    }
+
+    const apiUrl = `/api/fetchPlaylist?${params.toString()}`;
     const response = await fetch(apiUrl);
 
     if (!response.ok) {
@@ -55,26 +53,21 @@ async function fetchAndDisplayVideos(playlistUrl, searchTerm, pageToken = null, 
 
     const data = await response.json();
     const items = data.items || [];
-    nextPageToken = data.nextPageToken || null;
 
-    if (isNewSearch) {
-      resultsContainer.innerHTML = '';
-    }
+    if (isFresh) resultsContainer.innerHTML = '';
 
-    if (items.length === 0 && isNewSearch) {
-      resultsContainer.innerHTML = `<li>No videos found matching your criteria.</li>`;
-      loadMoreButton.style.display = 'none';
+    if (items.length === 0) {
+      resultsContainer.innerHTML = '<li>No videos found matching your criteria.</li>';
       return;
     }
 
-    for (const item of items) {
+    items.forEach(item => {
       const { videoId, title = 'Untitled Video', thumbnailUrl, videoUrl } = item;
 
-      if (!videoUrl) continue;
+      if (!videoUrl) return;
 
       const li = document.createElement('li');
       li.className = 'video-item';
-
       li.innerHTML = `
         <img src="${thumbnailUrl}" alt="${title} thumbnail" />
         <div class="video-info">
@@ -82,17 +75,32 @@ async function fetchAndDisplayVideos(playlistUrl, searchTerm, pageToken = null, 
         </div>
       `;
       resultsContainer.appendChild(li);
-    }
+    });
 
-    if (nextPageToken) {
-      loadMoreButton.style.display = 'block';
-    } else {
-      loadMoreButton.style.display = 'none';
-    }
+    nextPageToken = data.nextPageToken || null;
+
+    managePaginationButtons(resultsContainer, fetchAll);
 
   } catch (err) {
     console.error("Frontend Error:", err);
     resultsContainer.innerHTML = `<li class="error-message">${err.message}</li>`;
-    loadMoreButton.style.display = 'none';
+  }
+}
+
+function managePaginationButtons(container, fetchAll) {
+  document.querySelectorAll('.load-more-btn, .show-all-btn').forEach(btn => btn.remove());
+
+  if (!fetchAll && nextPageToken) {
+    const loadMoreBtn = document.createElement('button');
+    loadMoreBtn.textContent = 'Load More';
+    loadMoreBtn.className = 'load-more-btn';
+    loadMoreBtn.addEventListener('click', () => fetchAndRenderVideos(false));
+    container.appendChild(loadMoreBtn);
+
+    const showAllBtn = document.createElement('button');
+    showAllBtn.textContent = 'Show All';
+    showAllBtn.className = 'show-all-btn';
+    showAllBtn.addEventListener('click', () => fetchAndRenderVideos(false, true));
+    container.appendChild(showAllBtn);
   }
 }
