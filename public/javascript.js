@@ -2,23 +2,22 @@ let nextPageToken = null;
 let lastPlaylistUrl = '';
 let lastSearchTerm = '';
 let isLoading = false;
+const fetchedVideoIds = new Set();
 
 const resultsContainer = document.getElementById('results');
 const searchForm = document.getElementById('searchForm');
 
-// Create Load More button
+// Load More button
 const loadMoreButton = document.createElement('button');
 loadMoreButton.textContent = 'Load More';
 loadMoreButton.className = 'load-more-btn';
 loadMoreButton.style.display = 'none';
 loadMoreButton.addEventListener('click', async () => {
-  loadMoreButton.textContent = 'Loading all...';
   if (isLoading || !nextPageToken) return;
   await fetchAndDisplayVideos(lastPlaylistUrl, lastSearchTerm, nextPageToken);
-  loadMoreButton.textContent = 'Loading More';
 });
 
-// Create Show All button
+// Show All button
 const showAllButton = document.createElement('button');
 showAllButton.textContent = 'Show All';
 showAllButton.className = 'load-more-btn';
@@ -31,9 +30,9 @@ showAllButton.addEventListener('click', async () => {
     await fetchAndDisplayVideos(lastPlaylistUrl, lastSearchTerm, nextPageToken);
   }
 
-  showAllButton.style.display = 'none';
   showAllButton.disabled = false;
   showAllButton.textContent = 'Show All';
+  showAllButton.style.display = 'none';
 });
 
 resultsContainer.after(loadMoreButton);
@@ -54,13 +53,14 @@ searchForm.addEventListener('submit', async function (event) {
 
   resultsContainer.innerHTML = '<li class="loading-message">Loading...</li>';
   nextPageToken = null;
+  fetchedVideoIds.clear();
   lastPlaylistUrl = playlistUrl;
   lastSearchTerm = searchTerm;
 
   await fetchAndDisplayVideos(playlistUrl, searchTerm, null, true);
 });
 
-async function fetchAndDisplayVideos(playlistUrl, searchTerm, pageToken = null, isNewSearch = false) {
+async function fetchAndDisplayVideos(playlistUrl, searchTerm, pageToken = null, isNewSearch = false, retryDepth = 0) {
   if (isLoading) return;
   isLoading = true;
   loadMoreButton.disabled = true;
@@ -82,26 +82,33 @@ async function fetchAndDisplayVideos(playlistUrl, searchTerm, pageToken = null, 
 
     const data = await response.json();
     const items = data.items || [];
-    nextPageToken = data.nextPageToken || null;
+    const newPageToken = data.nextPageToken || null;
 
     if (isNewSearch) {
       resultsContainer.innerHTML = '';
     }
 
-    if (items.length === 0 && isNewSearch) {
-      resultsContainer.innerHTML = `<li>No videos found matching your criteria.</li>`;
-      loadMoreButton.style.display = 'none';
-      showAllButton.style.display = 'none';
-      return;
+    // Filter out duplicates
+    const uniqueItems = items.filter(item => {
+      const id = item.videoId;
+      return id && !fetchedVideoIds.has(id);
+    });
+
+    // If this page has no new items, try next page
+    if (uniqueItems.length === 0 && newPageToken && retryDepth < 3) {
+      nextPageToken = newPageToken; // advance token anyway
+      return await fetchAndDisplayVideos(playlistUrl, searchTerm, newPageToken, false, retryDepth + 1);
     }
 
-    for (const item of items) {
+    // Display new items
+    for (const item of uniqueItems) {
       const { videoId, title = 'Untitled Video', thumbnailUrl, videoUrl } = item;
-      if (!videoUrl) continue;
+      if (!videoId || !videoUrl) continue;
+
+      fetchedVideoIds.add(videoId);
 
       const li = document.createElement('li');
       li.className = 'video-item';
-
       li.innerHTML = `
         <img src="${thumbnailUrl}" alt="${title} thumbnail" />
         <div class="video-info">
@@ -111,12 +118,19 @@ async function fetchAndDisplayVideos(playlistUrl, searchTerm, pageToken = null, 
       resultsContainer.appendChild(li);
     }
 
+    nextPageToken = newPageToken;
+
+    // Show/hide buttons
     if (nextPageToken) {
       loadMoreButton.style.display = 'block';
       showAllButton.style.display = 'block';
     } else {
       loadMoreButton.style.display = 'none';
       showAllButton.style.display = 'none';
+    }
+
+    if (fetchedVideoIds.size === 0 && isNewSearch) {
+      resultsContainer.innerHTML = `<li>No videos found matching your criteria.</li>`;
     }
 
   } catch (err) {
