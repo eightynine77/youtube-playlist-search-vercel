@@ -9,11 +9,11 @@ const searchForm = document.getElementById('searchForm');
 
 // Load More button
 const loadMoreButton = document.createElement('button');
-loadMoreButton.textContent = 'Load More';
+loadMoreButton.textContent = 'Show More';
 loadMoreButton.className = 'load-more-btn';
 loadMoreButton.style.display = 'none';
 loadMoreButton.addEventListener('click', async () => {
-  loadMoreButton.textContent = 'Loading...';
+    loadMoreButton.textContent = 'Loading...';
   if (isLoading || !nextPageToken) return;
   await fetchAndDisplayVideos(lastPlaylistUrl, lastSearchTerm, nextPageToken);
   loadMoreButton.textContent = 'Load More';
@@ -26,7 +26,7 @@ showAllButton.className = 'load-more-btn';
 showAllButton.style.display = 'none';
 showAllButton.addEventListener('click', async () => {
   showAllButton.disabled = true;
-  showAllButton.textContent = 'Loading...';
+  loadMoreButton.textContent = 'Loading...';
 
   while (nextPageToken && !isLoading) {
     await fetchAndDisplayVideos(lastPlaylistUrl, lastSearchTerm, nextPageToken);
