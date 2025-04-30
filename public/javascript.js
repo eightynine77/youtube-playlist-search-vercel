@@ -12,8 +12,10 @@ loadMoreButton.textContent = 'Load More';
 loadMoreButton.className = 'load-more-btn';
 loadMoreButton.style.display = 'none';
 loadMoreButton.addEventListener('click', async () => {
+  loadMoreButton.textContent = 'Loading all...';
   if (isLoading || !nextPageToken) return;
   await fetchAndDisplayVideos(lastPlaylistUrl, lastSearchTerm, nextPageToken);
+  loadMoreButton.textContent = 'Loading More';
 });
 
 // Create Show All button
