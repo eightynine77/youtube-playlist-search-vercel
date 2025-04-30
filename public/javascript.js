@@ -6,11 +6,15 @@ const resultsContainer = document.getElementById('results');
 const searchForm = document.getElementById('searchForm');
 
 const loadMoreButton = document.createElement('button');
-loadMoreButton.textContent = 'Load More';
+loadMoreButton.textContent = 'Show More';
 loadMoreButton.className = 'load-more-btn';
-loadMoreButton.style.display = 'none'; // initially hidden
+loadMoreButton.style.display = 'none'; 
 loadMoreButton.addEventListener('click', async () => {
-  await fetchAndDisplayVideos(lastPlaylistUrl, lastSearchTerm, nextPageToken);
+  loadMoreButton.textContent = 'Loading...';
+  if (!isLoading && nextPageToken) {
+    await fetchAndDisplayVideos(lastPlaylistUrl, lastSearchTerm, nextPageToken);
+  }
+  loadMoreButton.textContent = 'Show More';
 });
 
 resultsContainer.after(loadMoreButton);
@@ -28,7 +32,7 @@ searchForm.addEventListener('submit', async function (event) {
   }
 
   resultsContainer.innerHTML = '<li class="loading-message">Loading...</li>';
-  nextPageToken = null; // reset
+  nextPageToken = null; 
   lastPlaylistUrl = playlistUrl;
   lastSearchTerm = searchTerm;
 
