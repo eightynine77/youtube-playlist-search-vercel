@@ -1,66 +1,96 @@
-document.getElementById('searchForm').addEventListener('submit', async function(event) {
-  event.preventDefault(); 
+let nextPageToken = null;
+let lastPlaylistUrl = '';
+let lastSearchTerm = '';
+
+const resultsContainer = document.getElementById('results');
+const searchForm = document.getElementById('searchForm');
+
+const loadMoreButton = document.createElement('button');
+loadMoreButton.textContent = 'Load More';
+loadMoreButton.className = 'load-more-btn';
+loadMoreButton.style.display = 'none'; // initially hidden
+loadMoreButton.addEventListener('click', async () => {
+  await fetchAndDisplayVideos(lastPlaylistUrl, lastSearchTerm, nextPageToken);
+});
+
+resultsContainer.after(loadMoreButton);
+
+searchForm.addEventListener('submit', async function (event) {
+  event.preventDefault();
 
   const playlistUrl = document.getElementById('playlistUrl').value.trim();
   const searchTerm = document.getElementById('searchTerm').value.trim();
-  const resultsContainer = document.getElementById('results');
 
   if (!playlistUrl) {
-      resultsContainer.innerHTML = '<li class="error-message">Please enter a playlist URL.</li>';
-      return;
+    resultsContainer.innerHTML = '<li class="error-message">Please enter a playlist URL.</li>';
+    loadMoreButton.style.display = 'none';
+    return;
   }
 
   resultsContainer.innerHTML = '<li class="loading-message">Loading...</li>';
+  nextPageToken = null; // reset
+  lastPlaylistUrl = playlistUrl;
+  lastSearchTerm = searchTerm;
 
+  await fetchAndDisplayVideos(playlistUrl, searchTerm, null, true);
+});
+
+async function fetchAndDisplayVideos(playlistUrl, searchTerm, pageToken = null, isNewSearch = false) {
   try {
-    const apiUrl = `/api/fetchPlaylist?playlistUrl=${encodeURIComponent(playlistUrl)}&searchTerm=${encodeURIComponent(searchTerm)}`;
-
+    const apiUrl = `/api/fetchPlaylist?playlistUrl=${encodeURIComponent(playlistUrl)}&searchTerm=${encodeURIComponent(searchTerm)}${pageToken ? `&pageToken=${pageToken}` : ''}`;
     const response = await fetch(apiUrl);
 
     if (!response.ok) {
       let errorMsg = `Error: ${response.status} ${response.statusText}`;
       try {
-          const errorData = await response.json();
-          errorMsg = `Error: ${errorData.error || 'Failed to fetch data from server.'}`;
+        const errorData = await response.json();
+        errorMsg = `Error: ${errorData.error || 'Failed to fetch data from server.'}`;
       } catch (e) {
-          console.warn("Could not parse error response body as JSON.");
+        console.warn("Could not parse error response body as JSON.");
       }
       throw new Error(errorMsg);
     }
 
-    const items = await response.json();
+    const data = await response.json();
+    const items = data.items || [];
+    nextPageToken = data.nextPageToken || null;
 
-    resultsContainer.innerHTML = ''; 
+    if (isNewSearch) {
+      resultsContainer.innerHTML = '';
+    }
 
-    if (!items || items.length === 0) {
+    if (items.length === 0 && isNewSearch) {
       resultsContainer.innerHTML = `<li>No videos found matching your criteria.</li>`;
+      loadMoreButton.style.display = 'none';
       return;
     }
 
-    items.forEach(item => {
+    for (const item of items) {
       const { videoId, title = 'Untitled Video', thumbnailUrl, videoUrl } = item;
 
-      if (!videoUrl) {
-          console.warn("Skipping item due to missing videoUrl:", item);
-          return;
-      }
+      if (!videoUrl) continue;
 
       const li = document.createElement('li');
       li.className = 'video-item';
 
-      const imageSrc = thumbnailUrl;
-
       li.innerHTML = `
-        <img src="${imageSrc}" alt="${title} thumbnail" />
+        <img src="${thumbnailUrl}" alt="${title} thumbnail" />
         <div class="video-info">
           <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">${title}</a>
         </div>
       `;
       resultsContainer.appendChild(li);
-    });
+    }
+
+    if (nextPageToken) {
+      loadMoreButton.style.display = 'block';
+    } else {
+      loadMoreButton.style.display = 'none';
+    }
 
   } catch (err) {
     console.error("Frontend Error:", err);
     resultsContainer.innerHTML = `<li class="error-message">${err.message}</li>`;
+    loadMoreButton.style.display = 'none';
   }
-});
+}
