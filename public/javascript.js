@@ -1,43 +1,70 @@
 let nextPageToken = null;
-let currentPlaylistUrl = '';
-let currentSearchTerm = '';
+let lastPlaylistUrl = '';
+let lastSearchTerm = '';
+let isLoading = false;
 
-document.getElementById('searchForm').addEventListener('submit', async function (event) {
-  event.preventDefault();
+const resultsContainer = document.getElementById('results');
+const searchForm = document.getElementById('searchForm');
 
-  currentPlaylistUrl = document.getElementById('playlistUrl').value.trim();
-  currentSearchTerm = document.getElementById('searchTerm').value.trim();
-  nextPageToken = null; 
-
-  const resultsContainer = document.getElementById('results');
-  resultsContainer.innerHTML = '<li class="loading-message">Loading...</li>';
-
-  await fetchAndRenderVideos(true); 
+const loadMoreButton = document.createElement('button');
+loadMoreButton.textContent = 'Load More';
+loadMoreButton.className = 'load-more-btn';
+loadMoreButton.style.display = 'none';
+loadMoreButton.addEventListener('click', async () => {
+    loadMoreButton.textContent = 'Loading...';
+  if (isLoading || !nextPageToken) return;
+  await fetchAndDisplayVideos(lastPlaylistUrl, lastSearchTerm, nextPageToken);
+  loadMoreButton.textContent = 'Loading...';
 });
 
-async function fetchAndRenderVideos(isFresh = false, fetchAll = false) {
-  const resultsContainer = document.getElementById('results');
+const showAllButton = document.createElement('button');
+showAllButton.textContent = 'Show All';
+showAllButton.className = 'load-more-btn';
+showAllButton.style.display = 'none';
+showAllButton.addEventListener('click', async () => {
+  showAllButton.disabled = true;
+  showAllButton.textContent = 'Loading...';
 
-  if (!currentPlaylistUrl) {
+  while (nextPageToken && !isLoading) {
+    await fetchAndDisplayVideos(lastPlaylistUrl, lastSearchTerm, nextPageToken);
+  }
+
+  showAllButton.style.display = 'none';
+  showAllButton.disabled = false;
+  showAllButton.textContent = 'Show All';
+});
+
+resultsContainer.after(loadMoreButton);
+loadMoreButton.after(showAllButton);
+
+searchForm.addEventListener('submit', async function (event) {
+  event.preventDefault();
+
+  const playlistUrl = document.getElementById('playlistUrl').value.trim();
+  const searchTerm = document.getElementById('searchTerm').value.trim();
+
+  if (!playlistUrl) {
     resultsContainer.innerHTML = '<li class="error-message">Please enter a playlist URL.</li>';
+    loadMoreButton.style.display = 'none';
+    showAllButton.style.display = 'none';
     return;
   }
 
+  resultsContainer.innerHTML = '<li class="loading-message">Loading...</li>';
+  nextPageToken = null;
+  lastPlaylistUrl = playlistUrl;
+  lastSearchTerm = searchTerm;
+
+  await fetchAndDisplayVideos(playlistUrl, searchTerm, null, true);
+});
+
+async function fetchAndDisplayVideos(playlistUrl, searchTerm, pageToken = null, isNewSearch = false) {
+  if (isLoading) return;
+  isLoading = true;
+  loadMoreButton.disabled = true;
+
   try {
-    const params = new URLSearchParams({
-      playlistUrl: currentPlaylistUrl,
-      searchTerm: currentSearchTerm
-    });
-
-    if (nextPageToken) {
-      params.append('pageToken', nextPageToken);
-    }
-
-    if (fetchAll) {
-      params.append('fetchAll', 'true');
-    }
-
-    const apiUrl = `/api/fetchPlaylist?${params.toString()}`;
+    const apiUrl = `/api/fetchPlaylist?playlistUrl=${encodeURIComponent(playlistUrl)}&searchTerm=${encodeURIComponent(searchTerm)}${pageToken ? `&pageToken=${pageToken}` : ''}`;
     const response = await fetch(apiUrl);
 
     if (!response.ok) {
@@ -53,21 +80,26 @@ async function fetchAndRenderVideos(isFresh = false, fetchAll = false) {
 
     const data = await response.json();
     const items = data.items || [];
+    nextPageToken = data.nextPageToken || null;
 
-    if (isFresh) resultsContainer.innerHTML = '';
+    if (isNewSearch) {
+      resultsContainer.innerHTML = '';
+    }
 
-    if (items.length === 0) {
-      resultsContainer.innerHTML = '<li>No videos found matching your criteria.</li>';
+    if (items.length === 0 && isNewSearch) {
+      resultsContainer.innerHTML = `<li>No videos found matching your criteria.</li>`;
+      loadMoreButton.style.display = 'none';
+      showAllButton.style.display = 'none';
       return;
     }
 
-    items.forEach(item => {
+    for (const item of items) {
       const { videoId, title = 'Untitled Video', thumbnailUrl, videoUrl } = item;
-
-      if (!videoUrl) return;
+      if (!videoUrl) continue;
 
       const li = document.createElement('li');
       li.className = 'video-item';
+
       li.innerHTML = `
         <img src="${thumbnailUrl}" alt="${title} thumbnail" />
         <div class="video-info">
@@ -75,32 +107,23 @@ async function fetchAndRenderVideos(isFresh = false, fetchAll = false) {
         </div>
       `;
       resultsContainer.appendChild(li);
-    });
+    }
 
-    nextPageToken = data.nextPageToken || null;
-
-    managePaginationButtons(resultsContainer, fetchAll);
+    if (nextPageToken) {
+      loadMoreButton.style.display = 'block';
+      showAllButton.style.display = 'block';
+    } else {
+      loadMoreButton.style.display = 'none';
+      showAllButton.style.display = 'none';
+    }
 
   } catch (err) {
     console.error("Frontend Error:", err);
     resultsContainer.innerHTML = `<li class="error-message">${err.message}</li>`;
-  }
-}
-
-function managePaginationButtons(container, fetchAll) {
-  document.querySelectorAll('.load-more-btn, .show-all-btn').forEach(btn => btn.remove());
-
-  if (!fetchAll && nextPageToken) {
-    const loadMoreBtn = document.createElement('button');
-    loadMoreBtn.textContent = 'Load More';
-    loadMoreBtn.className = 'load-more-btn';
-    loadMoreBtn.addEventListener('click', () => fetchAndRenderVideos(false));
-    container.appendChild(loadMoreBtn);
-
-    const showAllBtn = document.createElement('button');
-    showAllBtn.textContent = 'Show All';
-    showAllBtn.className = 'show-all-btn';
-    showAllBtn.addEventListener('click', () => fetchAndRenderVideos(false, true));
-    container.appendChild(showAllBtn);
+    loadMoreButton.style.display = 'none';
+    showAllButton.style.display = 'none';
+  } finally {
+    isLoading = false;
+    loadMoreButton.disabled = false;
   }
 }
