@@ -69,19 +69,16 @@ document.getElementById('searchForm').addEventListener('submit', async function(
       li.className = 'video-item'; // Add a class for styling
 
       // Use a default placeholder image if thumbnail is missing or fails to load
-      const imageSrc = thumbnailUrl || `https://placehold.co/120x90/eee/aaa?text=No+Thumb`;
+      const imageSrc = thumbnailUrl;
 
       // Set the inner HTML for the list item
       li.innerHTML = `
         <img
           src="${imageSrc}"
           alt="${title} thumbnail"
-          onerror="this.onerror=null; this.src='https://placehold.co/120x90/eee/aaa?text=Error';" // Fallback image if the original fails
         />
-        <div class="video-info">
-          {/* Link to the video, opening in a new tab */}
+        <div class="video-info"> 
           <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">${title}</a>
-           {/* Optionally display the Video ID */}
           <p class="video-id">Video ID: ${videoId}</p>
         </div>
       `;
