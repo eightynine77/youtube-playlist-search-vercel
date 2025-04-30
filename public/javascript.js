@@ -14,7 +14,7 @@ loadMoreButton.addEventListener('click', async () => {
     loadMoreButton.textContent = 'Loading...';
   if (isLoading || !nextPageToken) return;
   await fetchAndDisplayVideos(lastPlaylistUrl, lastSearchTerm, nextPageToken);
-  loadMoreButton.textContent = 'Loading...';
+  loadMoreButton.textContent = 'Load More';
 });
 
 const showAllButton = document.createElement('button');
