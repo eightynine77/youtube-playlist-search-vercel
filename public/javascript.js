@@ -36,9 +36,21 @@ form.addEventListener('submit', async function (event) {
 
   allFetchedItems = items;
   nextPageToken = nextToken;
-  showAllBtn.style.display = nextToken ? 'inline-block' : 'none';
 
   renderResults();
+  renderResults();
+
+const hasMatch = currentSearchTerm
+  ? allFetchedItems.some(item => item.title.toLowerCase().includes(currentSearchTerm))
+  : allFetchedItems.length > 0;
+
+if (nextToken && !hasMatch) {
+  showAllBtn.style.display = 'inline-block';
+} else if (nextToken && hasMatch) {
+  showAllBtn.style.display = 'inline-block';
+} else {
+  showAllBtn.style.display = 'none';
+}
 });
 
 async function fetchPlaylistPage(playlistUrl, pageToken = '') {
@@ -105,7 +117,13 @@ async function handleShowAll(event) {
     renderResults();
   }
 
-  showAllBtn.style.display = 'none';
+  renderResults();
+
+const hasMatch = currentSearchTerm
+  ? allFetchedItems.some(item => item.title.toLowerCase().includes(currentSearchTerm))
+  : allFetchedItems.length > 0;
+
+showAllBtn.style.display = hasMatch ? 'none' : 'none'; // Always hide after full load
   showAllBtn.disabled = false;
   showAllBtn.textContent = 'Show All';
 }
