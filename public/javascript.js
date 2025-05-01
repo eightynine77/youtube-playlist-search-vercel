@@ -1,7 +1,6 @@
 let nextPageToken = null;
 let lastPlaylistUrl = '';
 let lastSearchTerm = '';
-let isLoading = false;
 
 const resultsContainer = document.getElementById('results');
 const searchForm = document.getElementById('searchForm');
@@ -12,30 +11,11 @@ loadMoreButton.className = 'load-more-btn';
 loadMoreButton.style.display = 'none';
 loadMoreButton.addEventListener('click', async () => {
     loadMoreButton.textContent = 'Loading...';
-  if (isLoading || !nextPageToken) return;
   await fetchAndDisplayVideos(lastPlaylistUrl, lastSearchTerm, nextPageToken);
-  loadMoreButton.textContent = 'Load More';
-});
-
-const showAllButton = document.createElement('button');
-showAllButton.textContent = 'Show All';
-showAllButton.className = 'load-more-btn';
-showAllButton.style.display = 'none';
-showAllButton.addEventListener('click', async () => {
-  showAllButton.disabled = true;
-  showAllButton.textContent = 'Loading...';
-
-  while (nextPageToken && !isLoading) {
-    await fetchAndDisplayVideos(lastPlaylistUrl, lastSearchTerm, nextPageToken);
-  }
-
-  showAllButton.style.display = 'none';
-  showAllButton.disabled = false;
-  showAllButton.textContent = 'Show All';
+    loadMoreButton.textContent = 'Loading...';
 });
 
 resultsContainer.after(loadMoreButton);
-loadMoreButton.after(showAllButton);
 
 searchForm.addEventListener('submit', async function (event) {
   event.preventDefault();
@@ -46,12 +26,11 @@ searchForm.addEventListener('submit', async function (event) {
   if (!playlistUrl) {
     resultsContainer.innerHTML = '<li class="error-message">Please enter a playlist URL.</li>';
     loadMoreButton.style.display = 'none';
-    showAllButton.style.display = 'none';
     return;
   }
 
   resultsContainer.innerHTML = '<li class="loading-message">Loading...</li>';
-  nextPageToken = null;
+  nextPageToken = null; 
   lastPlaylistUrl = playlistUrl;
   lastSearchTerm = searchTerm;
 
@@ -59,10 +38,6 @@ searchForm.addEventListener('submit', async function (event) {
 });
 
 async function fetchAndDisplayVideos(playlistUrl, searchTerm, pageToken = null, isNewSearch = false) {
-  if (isLoading) return;
-  isLoading = true;
-  loadMoreButton.disabled = true;
-
   try {
     const apiUrl = `/api/fetchPlaylist?playlistUrl=${encodeURIComponent(playlistUrl)}&searchTerm=${encodeURIComponent(searchTerm)}${pageToken ? `&pageToken=${pageToken}` : ''}`;
     const response = await fetch(apiUrl);
@@ -89,12 +64,12 @@ async function fetchAndDisplayVideos(playlistUrl, searchTerm, pageToken = null, 
     if (items.length === 0 && isNewSearch) {
       resultsContainer.innerHTML = `<li>No videos found matching your criteria.</li>`;
       loadMoreButton.style.display = 'none';
-      showAllButton.style.display = 'none';
       return;
     }
 
     for (const item of items) {
       const { videoId, title = 'Untitled Video', thumbnailUrl, videoUrl } = item;
+
       if (!videoUrl) continue;
 
       const li = document.createElement('li');
@@ -111,19 +86,13 @@ async function fetchAndDisplayVideos(playlistUrl, searchTerm, pageToken = null, 
 
     if (nextPageToken) {
       loadMoreButton.style.display = 'block';
-      showAllButton.style.display = 'block';
     } else {
       loadMoreButton.style.display = 'none';
-      showAllButton.style.display = 'none';
     }
 
   } catch (err) {
     console.error("Frontend Error:", err);
     resultsContainer.innerHTML = `<li class="error-message">${err.message}</li>`;
     loadMoreButton.style.display = 'none';
-    showAllButton.style.display = 'none';
-  } finally {
-    isLoading = false;
-    loadMoreButton.disabled = false;
   }
 }
