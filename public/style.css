@@ -85,6 +85,17 @@ button:hover {
   text-decoration: underline;
 }
 
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.checkbox-group input[type="checkbox"] {
+  margin-right: 10px;
+  transform: scale(1.2);
+}
+
 @media (min-width: 600px) {
   .video-item {
     flex-direction: row;
