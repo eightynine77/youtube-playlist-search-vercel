@@ -7,10 +7,9 @@ let currentPlaylistUrl = '';
 
 const resultsContainer = document.getElementById('results');
 const form = document.getElementById('searchForm');
-
 const showAllBtn = document.createElement('button');
 showAllBtn.textContent = 'Show All';
-showAllBtn.style.display = 'none'; 
+showAllBtn.style.display = 'none';
 showAllBtn.addEventListener('click', handleShowAll);
 form.appendChild(showAllBtn);
 
@@ -19,9 +18,9 @@ form.addEventListener('submit', async function (event) {
     allFetchedItems = [];
     nextPageToken = null;
     resultsContainer.innerHTML = '<li class="loading-message">Loading...</li>';
-    showAllBtn.style.display = 'none'; 
-    showAllBtn.disabled = false;    
-    showAllBtn.textContent = 'Show All'; 
+    showAllBtn.style.display = 'none';
+    showAllBtn.disabled = false;
+    showAllBtn.textContent = 'Show All';
 
     currentPlaylistUrl = document.getElementById('playlistUrl').value.trim();
     currentSearchTerm = document.getElementById('searchTerm').value.trim().toLowerCase();
@@ -35,11 +34,11 @@ form.addEventListener('submit', async function (event) {
 
     if (error) {
         resultsContainer.innerHTML = `<li class="error-message">${error}</li>`;
-        showAllBtn.style.display = 'none'; 
+        showAllBtn.style.display = 'none';
         return;
     }
 
-    allFetchedItems = items || []; 
+    allFetchedItems = items || [];
     nextPageToken = nextToken;
 
     renderResults();
@@ -60,7 +59,7 @@ async function fetchPlaylistPage(playlistUrl, pageToken = '') {
             nextToken: data.nextPageToken || null
         };
     } catch (err) {
-        console.error("Fetch Error:", err); 
+        console.error("Fetch Error:", err);
         return { error: `Network or fetch error: ${err.message}` };
     }
 }
@@ -69,7 +68,7 @@ function renderResults() {
     const matchWholeWord = document.getElementById('wholeWordMatch')?.checked;
     const filtered = filterItems(allFetchedItems, currentSearchTerm, matchWholeWord);
 
-    resultsContainer.innerHTML = ''; 
+    resultsContainer.innerHTML = '';
 
     if (filtered.length === 0) {
         if (nextPageToken) {
@@ -78,7 +77,7 @@ function renderResults() {
             }
         } else {
             resultsContainer.innerHTML = '<li>No videos found matching your criteria.</li>';
-            showAllBtn.style.display = 'none'; 
+            showAllBtn.style.display = 'none';
         }
     } else {
         filtered.forEach(item => {
@@ -98,9 +97,9 @@ function renderResults() {
             resultsContainer.appendChild(li);
         });
 
-         if (!showAllBtn.disabled) {
+        if (!showAllBtn.disabled) {
             showAllBtn.style.display = nextPageToken ? 'inline-block' : 'none';
-         }
+        }
     }
 }
 
@@ -110,24 +109,24 @@ async function handleShowAll(event) {
     showAllBtn.textContent = 'Loading...';
     showAllBtn.style.display = 'inline-block';
 
-    let fetchError = null; 
+    let fetchError = null;
 
     while (nextPageToken) {
         const { items, nextToken, error } = await fetchPlaylistPage(currentPlaylistUrl, nextPageToken);
 
         if (error) {
             alert(`Failed to load some videos: ${error}`);
-            fetchError = error; 
-            nextPageToken = null; 
-            break; 
+            fetchError = error;
+            nextPageToken = null;
+            break;
         }
 
-        allFetchedItems = allFetchedItems.concat(items || []); 
+        allFetchedItems = allFetchedItems.concat(items || []);
         nextPageToken = nextToken;
 
         renderResults();
         if (nextPageToken && !showAllBtn.disabled) {
-             showAllBtn.style.display = 'inline-block';
+            showAllBtn.style.display = 'inline-block';
         }
     }
 
@@ -146,6 +145,6 @@ playlistUrlInput?.addEventListener('input', () => {
     if (!playlistUrlInput.value) {
         playlistUrlInput.setCustomValidity('Please enter a playlist URL.');
     } else {
-        playlistUrlInput.setCustomValidity(''); // Clear validation message
+        playlistUrlInput.setCustomValidity('');
     }
 });
