@@ -1,3 +1,5 @@
+import { filterItems } from './searchFilter.js';
+
 let allFetchedItems = [];
 let nextPageToken = null;
 let currentSearchTerm = '';
@@ -64,11 +66,8 @@ async function fetchPlaylistPage(playlistUrl, pageToken = '') {
 }
 
 function renderResults() {
-    const filtered = currentSearchTerm
-        ? allFetchedItems.filter(item =>
-            item && item.title && item.title.toLowerCase().includes(currentSearchTerm)
-          )
-        : allFetchedItems;
+    const matchWholeWord = document.getElementById('wholeWordMatch')?.checked;
+    const filtered = filterItems(allFetchedItems, currentSearchTerm, matchWholeWord);
 
     resultsContainer.innerHTML = ''; 
 
