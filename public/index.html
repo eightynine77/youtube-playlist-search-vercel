@@ -15,6 +15,10 @@
             <input type="text" id="playlistUrl" placeholder="Paste playlist URL (e.g. https://www.youtube.com/playlist?list=...)" required>
             <label for="searchTerm">Search Term:</label>
             <input type="text" id="searchTerm" placeholder="Search videos by title">
+            <div class="checkbox-group">
+                <input type="checkbox" id="wholeWordMatch">
+                <label for="wholeWordMatch">Match whole word only</label>
+            </div>
             <button type="submit">Search</button>
         </form>
         <ul id="results" class="video-list"></ul>
