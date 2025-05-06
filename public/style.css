@@ -2,13 +2,13 @@ body {
   font-family: Arial, sans-serif;
   margin: 20px;
   background-color: #f4f4f4;
+  color: #333; /* Added default text color */
 }
-
 h1 {
   text-align: center;
   font-size: 1.8em;
+  color: #333; /* Ensured heading color */
 }
-
 .container {
   max-width: 800px;
   margin: auto;
@@ -17,24 +17,43 @@ h1 {
   border-radius: 8px;
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
-
 form {
   margin-bottom: 20px;
 }
-
-label {
+label, .options-label { /* Applied styles to options-label as well */
   display: block;
   margin: 10px 0 5px;
+  font-weight: bold; /* Made labels bold */
+  color: #555; /* Darker label color */
 }
-
 input[type="text"] {
   width: 100%;
   padding: 10px;
   box-sizing: border-box;
   font-size: 1em;
+  border: 1px solid #ccc; /* Added border */
+  border-radius: 4px; /* Added border radius */
 }
 
-button {
+/* Specific style for the search options button */
+#searchOptionsBtn {
+  width: auto; /* Allow button to size to content */
+  padding: 10px 15px;
+  background-color: #555; /* Different color for utility button */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  margin-top: 10px;
+  margin-bottom: 10px; /* Added margin bottom */
+}
+#searchOptionsBtn:hover {
+  background-color: #333;
+}
+
+/* Submit button style */
+button[type="submit"] {
   width: 100%;
   padding: 12px;
   background-color: #cc181e;
@@ -43,10 +62,9 @@ button {
   border-radius: 4px;
   cursor: pointer;
   font-size: 1em;
-  margin-top: 10px;
+  margin-top: 15px; /* Increased margin top */
 }
-
-button:hover {
+button[type="submit"]:hover {
   background-color: #a31013;
 }
 
@@ -54,7 +72,6 @@ button:hover {
   list-style: none;
   padding: 0;
 }
-
 .video-item {
   display: flex;
   flex-direction: column;
@@ -62,48 +79,104 @@ button:hover {
   margin-bottom: 15px;
   background: #fafafa;
   padding: 10px;
+  border: 1px solid #eee; /* Added subtle border */
   border-radius: 4px;
 }
-
 .video-item img {
   width: 100%;
-  max-width: 300px;
+  max-width: 240px; /* Slightly smaller max-width for better layout */
   height: auto;
   object-fit: cover;
   margin-bottom: 10px;
   border-radius: 4px;
+  border: 1px solid #ddd; /* Border for images */
 }
-
+.video-info { /* Added class for video text content */
+    width: 100%;
+}
 .video-info a {
   font-size: 1.1em;
+  font-weight: bold; /* Make title bold */
   color: #cc181e;
   text-decoration: none;
-  word-break: break-word;
+  word-break: break-word; /* Keep this for long titles */
 }
-
 .video-info a:hover {
   text-decoration: underline;
 }
+.video-item p.description { /* Style for description snippet */
+    font-size: 0.9em;
+    color: #666;
+    margin-top: 5px;
+    max-height: 60px; /* Limit height */
+    overflow: hidden;
+    text-overflow: ellipsis; /* Add ellipsis for overflow */
+    display: -webkit-box;
+    -webkit-line-clamp: 3; /* Limit to 3 lines */
+    -webkit-box-orient: vertical;
+}
 
-.checkbox-group {
+
+/* Styles for the new search options group */
+.search-options-group {
+  border: 1px solid #e0e0e0;
+  padding: 15px;
+  margin-top: 10px;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+}
+
+.checkbox-group, .radio-group {
   display: flex;
   align-items: center;
-  margin-top: 10px;
+  margin-top: 8px; /* Consistent margin */
+  margin-bottom: 8px; /* Consistent margin */
+}
+.checkbox-group input[type="checkbox"],
+.radio-group input[type="radio"] {
+  margin-right: 10px;
+  transform: scale(1.1); /* Slightly smaller scale */
+  cursor: pointer; /* Add cursor pointer */
+}
+.checkbox-group label,
+.radio-group label {
+  font-weight: normal; /* Normal weight for these labels */
+  font-size: 0.95em; /* Slightly smaller font */
+  color: #333; /* Ensure label text is visible */
+  margin-bottom: 0; /* Remove bottom margin from label itself */
 }
 
-.checkbox-group input[type="checkbox"] {
-  margin-right: 10px;
-  transform: scale(1.2);
+.loading-message, .error-message, #results li {
+    padding: 10px;
+    margin-bottom: 5px;
+    border-radius: 4px;
 }
+.loading-message {
+    background-color: #eef;
+    color: #33a;
+}
+.error-message {
+    background-color: #fee;
+    color: #a33;
+}
+#results li:empty { /* Style for 'no videos found' message */
+    background-color: #f5f5f5;
+    text-align: center;
+    color: #777;
+}
+
 
 @media (min-width: 600px) {
   .video-item {
     flex-direction: row;
-    align-items: center;
+    align-items: flex-start; /* Align items to the start for better text flow */
   }
-
   .video-item img {
+    max-width: 180px; /* Adjust for side-by-side layout */
     margin-right: 15px;
     margin-bottom: 0;
+  }
+  .video-info {
+    flex: 1; /* Allow video info to take remaining space */
   }
 }
