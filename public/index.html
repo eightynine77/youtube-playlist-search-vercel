@@ -10,33 +10,18 @@
 <body>
   <div class="container">
     <h1>YouTube Playlist Video Search</h1>
-    <form id="searchForm">
-      <label for="playlistUrl">YouTube Playlist Link:</label>
-      <input type="text" id="playlistUrl" placeholder="Paste playlist URL (e.g. https://www.youtube.com/playlist?list=...)" required>
-      <label for="searchTerm">Search Term:</label>
-      <input type="text" id="searchTerm" placeholder="Search videos by title/description">
-      <div id="searchOptionsDiv" class="search-options-group">
-        <div class="checkbox-group">
-          <input type="checkbox" id="wholeWordMatch">
-          <label for="wholeWordMatch">Match whole word only</label>
-        </div>
-        <p class="options-label">Video Description Search:</p>
-        <div class="radio-group">
-          <input type="radio" id="searchTitleOnly" name="descriptionSearch" value="titleOnly" checked>
-          <label for="searchTitleOnly">Title Only (Default)</label>
-        </div>
-        <div class="radio-group">
-          <input type="radio" id="includeDescription" name="descriptionSearch" value="includeDescription">
-          <label for="includeDescription">Include video description in search</label>
-        </div>
-        <div class="radio-group">
-          <input type="radio" id="onlyDescription" name="descriptionSearch" value="onlyDescription">
-          <label for="onlyDescription">Only search video description</label>
-        </div>
-      </div>
-      <button type="submit">Search</button>
-    </form>
-    <ul id="results" class="video-list"></ul>
+        <form id="searchForm">
+            <label for="playlistUrl">YouTube Playlist Link:</label>
+            <input type="text" id="playlistUrl" placeholder="Paste playlist URL (e.g. https://www.youtube.com/playlist?list=...)" required>
+            <label for="searchTerm">Search Term:</label>
+            <input type="text" id="searchTerm" placeholder="Search videos by title">
+            <div class="checkbox-group">
+                <input type="checkbox" id="wholeWordMatch">
+                <label for="wholeWordMatch">Match whole word only</label>
+            </div>
+            <button type="submit">Search</button>
+        </form>
+        <ul id="results" class="video-list"></ul>
   </div>
 
   <script type="module" src="javascript.js"></script>
