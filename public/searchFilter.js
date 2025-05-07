@@ -1,23 +1,26 @@
-export function filterItems(items, searchTerm, wholeWordOnly, searchMode) {
+export function filterItems(items, searchTerm, wholeWordOnly, searchMode = 'title') {
   if (!searchTerm) return items;
 
   const term = searchTerm.toLowerCase();
-  const pattern = wholeWordOnly ? new RegExp(`\\b${escapeRegExp(term)}\\b`, 'i') : null;
+  const pattern = wholeWordOnly
+    ? new RegExp(`\\b${escapeRegExp(term)}\\b`, 'i')
+    : null;
 
   return items.filter(item => {
-    if (!item) return false;
+    const title = item?.title?.toLowerCase() || '';
+    const description = item?.description?.toLowerCase() || '';
 
-    const title = item.title?.toLowerCase() || '';
-    const description = item.description?.toLowerCase() || '';
+    const matchesTitle = title && (wholeWordOnly ? pattern.test(title) : title.includes(term));
+    const matchesDescription = description && (wholeWordOnly ? pattern.test(description) : description.includes(term));
 
-    if (searchMode === 'description') {
-      return wholeWordOnly ? pattern.test(description) : description.includes(term);
-    } else if (searchMode === 'both') {
-      return wholeWordOnly
-        ? pattern.test(title) || pattern.test(description)
-        : title.includes(term) || description.includes(term);
-    } else {
-      return wholeWordOnly ? pattern.test(title) : title.includes(term);
+    switch (searchMode) {
+      case 'both':
+        return matchesTitle || matchesDescription;
+      case 'description':
+        return matchesDescription;
+      case 'title':
+      default:
+        return matchesTitle;
     }
   });
 }

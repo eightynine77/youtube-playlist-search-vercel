@@ -50,6 +50,7 @@ export default async function handler(request, response) {
     const items = (data.items || []).map(item => ({
       videoId: item.snippet?.resourceId?.videoId,
       title: item.snippet?.title,
+      description: item.snippet?.description || '',
       thumbnailUrl: item.snippet?.thumbnails?.medium?.url,
       videoUrl: item.snippet?.resourceId?.videoId
         ? `https://www.youtube.com/watch?v=${item.snippet.resourceId.videoId}`
