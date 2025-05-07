@@ -19,6 +19,12 @@
                 <input type="checkbox" id="wholeWordMatch">
                 <label for="wholeWordMatch">Match whole word only</label>
             </div>
+            <div class="search-mode-group">
+              <p style="font-size: 22px;">Search video description</p>
+              <label><input type="radio" name="searchMode" value="title" checked> Search video title only (default)</label>
+              <label><input type="radio" name="searchMode" value="both"> Include video description</label>
+              <label><input type="radio" name="searchMode" value="description"> Search video description only</label>
+          </div>
             <button type="submit">Search</button>
         </form>
         <ul id="results" class="video-list"></ul>

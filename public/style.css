@@ -96,6 +96,22 @@ button:hover {
   transform: scale(1.2);
 }
 
+.search-mode-group {
+  margin-top: 10px;
+  padding-left: 2px;
+}
+
+.search-mode-group p {
+  margin: 10px 0 5px;
+  font-weight: bold;
+}
+
+.search-mode-group label {
+  display: block;
+  margin-left: 20px;
+  font-weight: normal;
+}
+
 @media (min-width: 600px) {
   .video-item {
     flex-direction: row;

@@ -66,7 +66,9 @@ async function fetchPlaylistPage(playlistUrl, pageToken = '') {
 
 function renderResults() {
     const matchWholeWord = document.getElementById('wholeWordMatch')?.checked;
-    const filtered = filterItems(allFetchedItems, currentSearchTerm, matchWholeWord);
+    const selectedMode = document.querySelector('input[name="searchMode"]:checked')?.value || 'title';
+    const filtered = filterItems(allFetchedItems, currentSearchTerm, matchWholeWord, selectedMode);
+
 
     resultsContainer.innerHTML = '';
 
