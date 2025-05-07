@@ -112,6 +112,11 @@ button:hover {
   font-weight: normal;
 }
 
+.title-text{
+  text-decoration: none;
+  color: black;
+}
+
 @media (min-width: 600px) {
   .video-item {
     flex-direction: row;
