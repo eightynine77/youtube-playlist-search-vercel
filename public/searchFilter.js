@@ -1,18 +1,22 @@
-export function filterItems(items, searchTerm, wholeWordOnly) {
-  if (!searchTerm) return items;
+export function filterVideos(videos, searchTerm, options = {}) {
+  const term = searchTerm.trim().toLowerCase();
+  const isWholeWord = options.wholeWord || false;
+  const descriptionSearch = options.descriptionSearch || null;
 
-  const term = searchTerm.toLowerCase();
-  const pattern = wholeWordOnly
-      ? new RegExp(`\\b${escapeRegExp(term)}\\b`, 'i')
-      : null;
+  if (!term) return videos;
 
-  return items.filter(item => {
-      if (!item || !item.title) return false;
-      const title = item.title.toLowerCase();
-      return wholeWordOnly ? pattern.test(title) : title.includes(term);
+  return videos.filter(item => {
+    const title = (item.title || '').toLowerCase();
+    const desc = (item.description || '').toLowerCase();
+
+    const regex = isWholeWord ? new RegExp(`\\b${term}\\b`, 'i') : new RegExp(term, 'i');
+
+    if (descriptionSearch === 'only') {
+      return regex.test(desc);
+    } else if (descriptionSearch === 'include') {
+      return regex.test(title) || regex.test(desc);
+    } else {
+      return regex.test(title);
+    }
   });
-}
-
-function escapeRegExp(string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
