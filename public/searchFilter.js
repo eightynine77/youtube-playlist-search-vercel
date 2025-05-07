@@ -1,4 +1,3 @@
-// searchFilter.js
 export function filterVideos(videos, searchTerm, options = {}) {
   const term = searchTerm.toLowerCase();
   const { matchWholeWord = false, descriptionMode = 'title' } = options;

@@ -16,8 +16,21 @@
             <label for="searchTerm">Search Term:</label>
             <input type="text" id="searchTerm" placeholder="Search videos by title">
             <div class="checkbox-group">
+              <label>
                 <input type="checkbox" id="wholeWordMatch">
-                <label for="wholeWordMatch">Match whole word only</label>
+                Match whole word only
+              </label>
+          
+              <p style="margin: 10px 0 5px;">Video description search:</p>
+          
+              <label>
+                <input type="radio" name="descSearchMode" value="include" id="includeDescription">
+                Include video description search
+              </label>
+              <label>
+                <input type="radio" name="descSearchMode" value="only" id="onlyDescription">
+                Only search video description
+              </label>
             </div>
             <button type="submit">Search</button>
         </form>
