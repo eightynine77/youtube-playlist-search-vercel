@@ -89,8 +89,6 @@ button:hover {
   display: flex;
   align-items: center;
   margin-top: 10px;
-  flex-direction: column; 
-  align-items: flex-start;
 }
 
 .checkbox-group input[type="checkbox"] {

@@ -1,33 +1,34 @@
-export function filterVideos(items, searchTerm, options) {
-  if (!searchTerm) return items;
-
-  const {
-    matchWholeWord = false,
-    includeDescription = false,
-    onlyDescription = false,
-  } = options;
-
+// searchFilter.js
+export function filterVideos(videos, searchTerm, options = {}) {
   const term = searchTerm.toLowerCase();
-  const wordRegex = new RegExp(`\\b${escapeRegex(term)}\\b`, 'i');
+  const { matchWholeWord = false, descriptionMode = 'title' } = options;
 
-  return items.filter(item => {
-    const title = item.title?.toLowerCase() || '';
-    const description = item.description?.toLowerCase() || '';
+  if (!term) return videos;
 
-    if (onlyDescription) {
-      return matchWholeWord ? wordRegex.test(description) : description.includes(term);
+  const isWholeWordMatch = (text) => {
+    if (!text) return false;
+    const pattern = new RegExp(`\\b${escapeRegExp(term)}\\b`, 'i');
+    return pattern.test(text);
+  };
+
+  return videos.filter(video => {
+    const title = video.title?.toLowerCase() || '';
+    const desc = video.description?.toLowerCase() || '';
+
+    const check = (text) => {
+      return matchWholeWord ? isWholeWordMatch(text) : text.includes(term);
+    };
+
+    if (descriptionMode === 'only') {
+      return check(desc);
+    } else if (descriptionMode === 'include') {
+      return check(title) || check(desc);
+    } else {
+      return check(title);
     }
-
-    if (includeDescription) {
-      const combined = `${title} ${description}`;
-      return matchWholeWord ? wordRegex.test(combined) : combined.includes(term);
-    }
-
-    // default: search title only
-    return matchWholeWord ? wordRegex.test(title) : title.includes(term);
   });
 }
 
-function escapeRegex(text) {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

@@ -15,19 +15,9 @@
             <input type="text" id="playlistUrl" placeholder="Paste playlist URL (e.g. https://www.youtube.com/playlist?list=...)" required>
             <label for="searchTerm">Search Term:</label>
             <input type="text" id="searchTerm" placeholder="Search videos by title">
-            <div id="searchOptions" class="checkbox-group">
-              <label>
+            <div class="checkbox-group">
                 <input type="checkbox" id="wholeWordMatch">
-                Match whole word only
-              </label>
-          
-              <p style="margin: 10px 0 5px;">Video Description Search:</p>
-              <label>
-                <input type="radio" name="descriptionSearch" value="include"> Include video description search
-              </label>
-              <label>
-                <input type="radio" name="descriptionSearch" value="only"> Only search video description
-              </label>
+                <label for="wholeWordMatch">Match whole word only</label>
             </div>
             <button type="submit">Search</button>
         </form>

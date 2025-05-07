@@ -1,4 +1,4 @@
-import { filterItems } from './searchFilter.js';
+import { filterVideos } from './searchFilter.js';
 
 let allFetchedItems = [];
 let nextPageToken = null;
@@ -65,15 +65,15 @@ async function fetchPlaylistPage(playlistUrl, pageToken = '') {
 }
 
 function renderResults() {
-    const matchTheWholeWord = document.getElementById('wholeWordMatch')?.checked;
-const includeDescription = document.querySelector('input[name="descriptionOption"]:checked')?.value === 'include';
-const onlyDescription = document.querySelector('input[name="descriptionOption"]:checked')?.value === 'only';
-
-const filtered = filterVideos(allFetchedItems, currentSearchTerm, {
-  matchWholeWord: matchTheWholeWord,
-  includeDescription,
-  onlyDescription
-});
+    const options = {
+        matchWholeWord: document.getElementById('wholeWordMatch')?.checked,
+        descriptionMode: document.getElementById('includeDescription')?.checked
+          ? 'include'
+          : document.getElementById('onlyDescription')?.checked
+          ? 'only'
+          : 'title'
+      };
+    const filtered = filterItems(allFetchedItems, currentSearchTerm, options);
 
     resultsContainer.innerHTML = '';
 
