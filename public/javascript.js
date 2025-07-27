@@ -7,20 +7,12 @@ let currentPlaylistUrl = '';
 
 const resultsContainer = document.getElementById('results');
 const form = document.getElementById('searchForm');
-const showAllBtn = document.createElement('button');
-showAllBtn.textContent = 'Show All';
-showAllBtn.style.display = 'none';
-showAllBtn.addEventListener('click', handleShowAll);
-form.appendChild(showAllBtn);
 
 form.addEventListener('submit', async function (event) {
     event.preventDefault();
     allFetchedItems = [];
     nextPageToken = null;
     resultsContainer.innerHTML = '<li class="loading-message">Loading...</li>';
-    showAllBtn.style.display = 'none';
-    showAllBtn.disabled = false;
-    showAllBtn.textContent = 'Show All';
 
     currentPlaylistUrl = document.getElementById('playlistUrl').value.trim();
     currentSearchTerm = document.getElementById('searchTerm').value.trim().toLowerCase();
@@ -30,18 +22,31 @@ form.addEventListener('submit', async function (event) {
         return;
     }
 
-    const { items, nextToken, error } = await fetchPlaylistPage(currentPlaylistUrl);
+    const matchWholeWord = document.getElementById('wholeWordMatch')?.checked;
+    const selectedMode = document.querySelector('input[name="searchMode"]:checked')?.value || 'title';
 
-    if (error) {
-        resultsContainer.innerHTML = `<li class="error-message">${error}</li>`;
-        showAllBtn.style.display = 'none';
-        return;
+    let totalFetched = 0;
+
+    while (true) {
+        const { items, nextToken, error } = await fetchPlaylistPage(currentPlaylistUrl, nextPageToken);
+
+        if (error) {
+            resultsContainer.innerHTML = `<li class="error-message">${error}</li>`;
+            return;
+        }
+
+        allFetchedItems = allFetchedItems.concat(items);
+        totalFetched += items.length;
+        nextPageToken = nextToken;
+
+        const filtered = filterItems(allFetchedItems, currentSearchTerm, matchWholeWord, selectedMode);
+        if (filtered.length > 0 || !nextPageToken) {
+            renderResults();
+            break;
+        }
+
+        //if (totalFetched >= 200) break; safety limit, optional to adjust/remove
     }
-
-    allFetchedItems = items || [];
-    nextPageToken = nextToken;
-
-    renderResults();
 });
 
 async function fetchPlaylistPage(playlistUrl, pageToken = '') {
@@ -69,77 +74,27 @@ function renderResults() {
     const selectedMode = document.querySelector('input[name="searchMode"]:checked')?.value || 'title';
     const filtered = filterItems(allFetchedItems, currentSearchTerm, matchWholeWord, selectedMode);
 
-
     resultsContainer.innerHTML = '';
 
     if (filtered.length === 0) {
-        if (nextPageToken) {
-            if (!showAllBtn.disabled) {
-                showAllBtn.style.display = 'inline-block';
-            }
-        } else {
-            resultsContainer.innerHTML = '<li>No videos found matching your criteria.</li>';
-            showAllBtn.style.display = 'none';
-        }
-    } else {
-        filtered.forEach(item => {
-            const { title, thumbnailUrl, videoUrl } = item;
-            if (!title || !thumbnailUrl || !videoUrl) {
-                console.warn("Skipping item with missing data:", item);
-                return;
-            }
-            const li = document.createElement('li');
-            li.className = 'video-item';
-            li.innerHTML = `
-                <img src="${thumbnailUrl}" alt="${title} thumbnail" loading="lazy" />
-                <div class="video-info">
-                    <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">${title}</a>
-                </div>
-            `;
-            resultsContainer.appendChild(li);
-        });
-
-        if (!showAllBtn.disabled) {
-            showAllBtn.style.display = nextPageToken ? 'inline-block' : 'none';
-        }
-    }
-}
-
-async function handleShowAll(event) {
-    event.preventDefault();
-    showAllBtn.disabled = true;
-    showAllBtn.textContent = 'Loading...';
-    showAllBtn.style.display = 'inline-block';
-
-    let fetchError = null;
-
-    while (nextPageToken) {
-        const { items, nextToken, error } = await fetchPlaylistPage(currentPlaylistUrl, nextPageToken);
-
-        if (error) {
-            alert(`Failed to load some videos: ${error}`);
-            fetchError = error;
-            nextPageToken = null;
-            break;
-        }
-
-        allFetchedItems = allFetchedItems.concat(items || []);
-        nextPageToken = nextToken;
-
-        renderResults();
-        if (nextPageToken && !showAllBtn.disabled) {
-            showAllBtn.style.display = 'inline-block';
-        }
+        resultsContainer.innerHTML = '<li>No videos found matching your criteria.</li>';
+        return;
     }
 
-    showAllBtn.disabled = false;
-    showAllBtn.textContent = 'Show All';
+    filtered.forEach(item => {
+        const { title, thumbnailUrl, videoUrl } = item;
+        if (!title || !thumbnailUrl || !videoUrl) return;
 
-    renderResults();
-
-    if (fetchError) {
-        showAllBtn.style.display = 'none';
-    }
+        const li = document.createElement('li');
+        li.className = 'video-item';
+        li.innerHTML = `
+            <img src="${thumbnailUrl}" alt="${title} thumbnail" loading="lazy" />
+            <div class="video-info">
+                <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">${title}</a>
+            </div>
+        `;
+        resultsContainer.appendChild(li);
+    });
 }
 
 const playlistUrlInput = document.getElementById('playlistUrl');
