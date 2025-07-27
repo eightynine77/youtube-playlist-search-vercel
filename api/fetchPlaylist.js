@@ -30,14 +30,14 @@ export default async function handler(request, response) {
 
   const playlistId = extractPlaylistId(playlistUrl);
   if (!playlistId) {
-    return response.status(400).json({ error: "Invalid playlist URL. Make sure it has a 'list=' parameter." });
+    return response.status(400).json({ error: "Invalid YouTube playlist URL. Make sure it's a valid YouTube URL with a 'list=' parameter." });
   }
 
   if (!API_KEY) {
     return response.status(500).json({ error: "YouTube API key is not configured." });
   }
 
-  const apiUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${encodeURIComponent(playlistId)}&maxResults=50&pageToken=${pageToken}&key=${API_KEY}`;
+  const apiUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${encodeURIComponent(playlistId)}&maxResults=40&pageToken=${pageToken}&key=${API_KEY}`;
 
   try {
     const ytResponse = await fetch(apiUrl);

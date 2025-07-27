@@ -1,17 +1,19 @@
 import { filterItems } from './searchFilter.js';
 
 let allFetchedItems = [];
-let nextPageToken = null;
 let currentSearchTerm = '';
 let currentPlaylistUrl = '';
+let isSearching = false;
 
 const resultsContainer = document.getElementById('results');
 const form = document.getElementById('searchForm');
 
 form.addEventListener('submit', async function (event) {
     event.preventDefault();
+    
+    isSearching = false; 
+    
     allFetchedItems = [];
-    nextPageToken = null;
     resultsContainer.innerHTML = '<li class="loading-message">Loading...</li>';
 
     currentPlaylistUrl = document.getElementById('playlistUrl').value.trim();
@@ -22,33 +24,50 @@ form.addEventListener('submit', async function (event) {
         return;
     }
 
-    const matchWholeWord = document.getElementById('wholeWordMatch')?.checked;
-    const selectedMode = document.querySelector('input[name="searchMode"]:checked')?.value || 'title';
+    isSearching = true;
+    await progressiveSearch();
+});
 
-    while (true) {
+async function progressiveSearch() {
+    let nextPageToken = '';
+    let initialFetch = true;
+
+    do {
+        if (!isSearching) {
+            return; 
+        }
+
         const { items, nextToken, error } = await fetchPlaylistPage(currentPlaylistUrl, nextPageToken);
 
         if (error) {
             resultsContainer.innerHTML = `<li class="error-message">${error}</li>`;
+            isSearching = false;
             return;
         }
 
-        allFetchedItems = allFetchedItems.concat(items);
-        const filtered = filterItems(allFetchedItems, currentSearchTerm, matchWholeWord, selectedMode);
-
-        if (filtered.length > 0) {
-            renderResults();
-            return;
+        if (initialFetch) {
+            resultsContainer.innerHTML = '';
+            initialFetch = false;
+        }
+        
+        if (items && items.length > 0) {
+            allFetchedItems = allFetchedItems.concat(items);
         }
 
-        if (!nextToken) {
-            renderResults();
-            return;
-        }
-
+        renderResults();
+        
         nextPageToken = nextToken;
+
+    } while (nextPageToken);
+
+    if (allFetchedItems.length === 0) {
+        resultsContainer.innerHTML = '<li>No videos found in this playlist.</li>';
+    } else if (filterItems(allFetchedItems, currentSearchTerm, document.getElementById('wholeWordMatch')?.checked, document.querySelector('input[name="searchMode"]:checked')?.value || 'title').length === 0) {
+        resultsContainer.innerHTML = '<li>No videos found matching your criteria.</li>';
     }
-});
+
+    isSearching = false;
+}
 
 async function fetchPlaylistPage(playlistUrl, pageToken = '') {
     try {
@@ -77,25 +96,24 @@ function renderResults() {
 
     resultsContainer.innerHTML = '';
 
-    if (filtered.length === 0) {
-        resultsContainer.innerHTML = '<li>No videos found matching your criteria.</li>';
-        return;
+    if (filtered.length > 0) {
+        filtered.forEach(item => {
+            const { title, thumbnailUrl, videoUrl } = item;
+            if (!title || !thumbnailUrl || !videoUrl) {
+                console.warn("Skipping item with missing data:", item);
+                return;
+            }
+            const li = document.createElement('li');
+            li.className = 'video-item';
+            li.innerHTML = `
+                <img src="${thumbnailUrl}" alt="${title} thumbnail" loading="lazy" />
+                <div class="video-info">
+                    <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">${title}</a>
+                </div>
+            `;
+            resultsContainer.appendChild(li);
+        });
     }
-
-    filtered.forEach(item => {
-        const { title, thumbnailUrl, videoUrl } = item;
-        if (!title || !thumbnailUrl || !videoUrl) return;
-
-        const li = document.createElement('li');
-        li.className = 'video-item';
-        li.innerHTML = `
-            <img src="${thumbnailUrl}" alt="${title} thumbnail" loading="lazy" />
-            <div class="video-info">
-                <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">${title}</a>
-            </div>
-        `;
-        resultsContainer.appendChild(li);
-    });
 }
 
 const playlistUrlInput = document.getElementById('playlistUrl');
