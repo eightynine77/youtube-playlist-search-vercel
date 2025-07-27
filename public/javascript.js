@@ -25,8 +25,6 @@ form.addEventListener('submit', async function (event) {
     const matchWholeWord = document.getElementById('wholeWordMatch')?.checked;
     const selectedMode = document.querySelector('input[name="searchMode"]:checked')?.value || 'title';
 
-    let totalFetched = 0;
-
     while (true) {
         const { items, nextToken, error } = await fetchPlaylistPage(currentPlaylistUrl, nextPageToken);
 
@@ -36,16 +34,19 @@ form.addEventListener('submit', async function (event) {
         }
 
         allFetchedItems = allFetchedItems.concat(items);
-        totalFetched += items.length;
-        nextPageToken = nextToken;
-
         const filtered = filterItems(allFetchedItems, currentSearchTerm, matchWholeWord, selectedMode);
-        if (filtered.length > 0 || !nextPageToken) {
+
+        if (filtered.length > 0) {
             renderResults();
-            break;
+            return;
         }
 
-        //if (totalFetched >= 200) break; safety limit, optional to adjust/remove
+        if (!nextToken) {
+            renderResults();
+            return;
+        }
+
+        nextPageToken = nextToken;
     }
 });
 
