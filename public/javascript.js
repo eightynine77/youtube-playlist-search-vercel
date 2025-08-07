@@ -98,7 +98,7 @@ function renderResults() {
 
     if (filtered.length > 0) {
         filtered.forEach(item => {
-            const { title, thumbnailUrl, videoUrl } = item;
+            const { title, thumbnailUrl, videoUrl, channelTitle } = item; 
             if (!title || !thumbnailUrl || !videoUrl) {
                 console.warn("Skipping item with missing data:", item);
                 return;
@@ -109,6 +109,7 @@ function renderResults() {
                 <img src="${thumbnailUrl}" alt="${title} thumbnail" loading="lazy" />
                 <div class="video-info">
                     <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">${title}</a>
+                    <p class="channel-name">${channelTitle || ''}</p> 
                 </div>
             `;
             resultsContainer.appendChild(li);
