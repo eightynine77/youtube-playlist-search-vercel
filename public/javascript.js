@@ -108,8 +108,8 @@ function renderResults() {
             li.innerHTML = `
                 <img src="${thumbnailUrl}" alt="${title} thumbnail" loading="lazy" />
                 <div class="video-info">
-                    <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">${title}</a><br>
-                    ${channelId ? `<a href="https://www.youtube.com/channel/${channelId}" class="channel-link" target="_blank" rel="noopener noreferrer">${channelTitle || ''}</a>` : `<p class="channel-name">${channelTitle || ''}</p>`}
+                    <u><a href="${videoUrl}" target="_blank" rel="noopener noreferrer">${title}</a></u><br><br>
+                    ${channelId ? `<a href="https://www.youtube.com/channel/${channelId}" class="channel-link" target="_blank" rel="noopener noreferrer">${channelTitle || ''}</a>` : `<u><p class="channel-name">${channelTitle || ''}</p></u>`}
                 </div>
             `;
             resultsContainer.appendChild(li);
