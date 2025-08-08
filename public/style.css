@@ -105,6 +105,7 @@ button:hover {
 .video-info .youtube-channel-text {
   font-size: 1.1em;
   word-break: break-word;
+  font-weight: normal;
   color: #313338;
 }
 
