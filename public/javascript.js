@@ -109,7 +109,7 @@ function renderResults() {
                 <img src="${thumbnailUrl}" alt="${title} thumbnail" loading="lazy" />
                 <div class="video-info">
                     <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">${title}</a><br><br>
-                    <p class="youtube-channel-text">youtube channel: </p>${channelId ? `<a href="https://www.youtube.com/channel/${channelId}" class="channel-link" target="_blank" rel="noopener noreferrer">${channelTitle || ''}</a>` : `<p class="channel-name">${channelTitle || ''}</p>`}
+                    ${channelId ? `<a href="https://www.youtube.com/channel/${channelId}" class="channel-link" target="_blank" rel="noopener noreferrer">${channelTitle || ''}</a>` : `<p class="youtube-channel-text">youtube channel: </p><p class="channel-name">${channelTitle || ''}</p>`}
                 </div>
             `;
             resultsContainer.appendChild(li);
