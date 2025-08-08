@@ -89,7 +89,6 @@ button:hover {
   display: block;
   font-size: 1.1em;
   color: #cc181e;
-  margin-top: 6px;
   font-weight: normal;
   text-decoration: underline;
 }
@@ -98,7 +97,6 @@ button:hover {
     font-size: 1.1em;
     color: #cc181e;
     text-decoration: underline;
-    margin-top: 6px;
     font-weight: normal;
 }
 
