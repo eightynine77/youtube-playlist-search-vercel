@@ -81,25 +81,24 @@ button:hover {
 .video-info a {
   font-size: 1.1em;
   color: #cc181e;
-  text-decoration: none;
   text-decoration: underline;
   word-break: break-word;
 }
 
 .video-info .channel-link {
   display: block;
-  font-size: 0.9em;
+  font-size: 1.1em;
   color: #cc181e;
-  margin: 4px 0 0 0;
+  margin-top: 3px;
   font-weight: normal;
   text-decoration: underline;
 }
 
 .video-info .channel-name {
-    font-size: 0.9em;
+    font-size: 1.1em;
     color: #cc181e;
     text-decoration: underline;
-    margin: 4px 0 0 0;
+    margin-top: 3px;
     font-weight: normal;
 }
 
