@@ -91,6 +91,7 @@ button:hover {
   color: #cc181e;
   font-weight: normal;
   text-decoration: underline;
+  word-break: break-word;
 }
 
 .video-info .channel-name {
@@ -98,6 +99,13 @@ button:hover {
     color: #cc181e;
     text-decoration: underline;
     font-weight: normal;
+    word-break: break-word;
+}
+
+.video-info .youtube-channel-text {
+  font-size: 1.1em;
+  word-break: break-word;
+  color: #313338;
 }
 
 .checkbox-group {
