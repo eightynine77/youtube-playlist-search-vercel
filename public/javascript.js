@@ -98,7 +98,7 @@ function renderResults() {
 
     if (filtered.length > 0) {
         filtered.forEach(item => {
-            const { title, thumbnailUrl, videoUrl, channelTitle, channelId } = item; // Get channelId
+            const { title, thumbnailUrl, videoUrl, channelTitle, channelId } = item; 
             if (!title || !thumbnailUrl || !videoUrl) {
                 console.warn("Skipping item with missing data:", item);
                 return;
