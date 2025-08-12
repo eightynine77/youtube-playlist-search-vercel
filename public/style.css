@@ -50,9 +50,21 @@ button:hover {
   background-color: #a31013;
 }
 
-.results-link{
-  text-decoration: underline;
+#statusMessage {
+    text-align: center;
+    padding: 15px 10px;
+    font-size: 1.1em;
+    font-style: italic;
 }
+
+.status-error {
+    color: #cc181e; 
+    font-weight: bold;
+  }
+  
+  .results-link{
+    text-decoration: underline;
+  }
 
 .video-list {
   list-style: none;

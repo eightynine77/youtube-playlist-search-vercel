@@ -6,21 +6,27 @@ let currentPlaylistUrl = '';
 let isSearching = false;
 
 const resultsContainer = document.getElementById('results');
+const statusMessageEl = document.getElementById('statusMessage'); 
 const form = document.getElementById('searchForm');
+
+function updateStatus(message, isError = false) {
+    statusMessageEl.textContent = message;
+    statusMessageEl.className = isError ? 'status-error' : 'status-info';
+}
 
 form.addEventListener('submit', async function (event) {
     event.preventDefault();
-    
     isSearching = false; 
     
     allFetchedItems = [];
-    resultsContainer.innerHTML = '<li class="loading-message">Loading...</li>';
+    resultsContainer.innerHTML = ''; 
+    updateStatus('Loading...'); 
 
     currentPlaylistUrl = document.getElementById('playlistUrl').value.trim();
     currentSearchTerm = document.getElementById('searchTerm').value.trim().toLowerCase();
 
     if (!currentPlaylistUrl) {
-        resultsContainer.innerHTML = '<li class="error-message">Please enter a playlist URL.</li>';
+        updateStatus('Please enter a playlist URL.', true);
         return;
     }
 
@@ -30,40 +36,37 @@ form.addEventListener('submit', async function (event) {
 
 async function progressiveSearch() {
     let nextPageToken = '';
-    let initialFetch = true;
 
     do {
         if (!isSearching) {
+            updateStatus(''); 
             return; 
         }
 
         const { items, nextToken, error } = await fetchPlaylistPage(currentPlaylistUrl, nextPageToken);
 
         if (error) {
-            resultsContainer.innerHTML = `<li class="error-message">${error}</li>`;
+            updateStatus(error, true); 
             isSearching = false;
             return;
-        }
-
-        if (initialFetch) {
-            resultsContainer.innerHTML = '';
-            initialFetch = false;
         }
         
         if (items && items.length > 0) {
             allFetchedItems = allFetchedItems.concat(items);
         }
-
-        renderResults();
+        
+        renderResults(); 
         
         nextPageToken = nextToken;
 
     } while (nextPageToken);
 
     if (allFetchedItems.length === 0) {
-        resultsContainer.innerHTML = '<li>No videos found in this playlist.</li>';
+        updateStatus('No videos found in this playlist.');
     } else if (filterItems(allFetchedItems, currentSearchTerm, document.getElementById('wholeWordMatch')?.checked, document.querySelector('input[name="searchMode"]:checked')?.value || 'title').length === 0) {
-        resultsContainer.innerHTML = '<li>No videos found matching your criteria.</li>';
+        updateStatus('No videos found matching your criteria.');
+    } else {
+        updateStatus(''); 
     }
 
     isSearching = false;
@@ -98,17 +101,19 @@ function renderResults() {
 
     if (filtered.length > 0) {
         filtered.forEach(item => {
-            const { title, thumbnailUrl, videoUrl, channelTitle, channelId } = item; 
+            const { title, thumbnailUrl, videoUrl, channelTitle, channelId } = item;
             if (!title || !thumbnailUrl || !videoUrl) {
                 console.warn("Skipping item with missing data:", item);
                 return;
             }
             const li = document.createElement('li');
             li.className = 'video-item';
+            
             li.innerHTML = `
                 <img src="${thumbnailUrl}" alt="${title} thumbnail" loading="lazy" />
                 <div class="video-info">
-                    <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">${title}</a><br><br>
+                    <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">${title}</a>
+                    
                     <div class="channel-info-container">
                         <span class="youtube-channel-text">youtube channel: </span>
                         ${channelId ? `<a href="https://www.youtube.com/channel/${channelId}" class="channel-link" target="_blank" rel="noopener noreferrer">${channelTitle || ''}</a>` : `<span class="channel-name">${channelTitle || ''}</span>`}

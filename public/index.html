@@ -12,7 +12,7 @@
     <h1>YouTube Playlist Video Search</h1>
         <form id="searchForm">
             <label for="playlistUrl">YouTube Playlist Link:</label>
-            <input type="text" id="playlistUrl" placeholder="Paste playlist URL (e.g. https://www.youtube.com/playlist?list=...)" required>
+            <input type="text" id="playlistUrl" placeholder="Paste playlist URL (e.g., https://www.youtube.com/playlist?list=...)" required>
             <label for="searchTerm">Search Term:</label>
             <input type="text" id="searchTerm" placeholder="Search videos by title">
             <div class="checkbox-group">
@@ -27,6 +27,8 @@
           </div>
             <button type="submit">Search</button>
         </form>
+        
+        <p id="statusMessage"></p>
         <ul id="results" class="video-list"></ul>
   </div>
 
