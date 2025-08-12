@@ -115,7 +115,7 @@ function renderResults() {
                     <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">${title}</a>
                     
                     <div class="channel-info-container">
-                        <span class="youtube-channel-text">youtube channel: </span><br>
+                        <span class="youtube-channel-text">youtube channel: </span>
                         ${channelId ? `<a href="https://www.youtube.com/channel/${channelId}" class="channel-link" target="_blank" rel="noopener noreferrer">${channelTitle || ''}</a>` : `<span class="channel-name">${channelTitle || ''}</span>`}
                     </div>
                 </div>
