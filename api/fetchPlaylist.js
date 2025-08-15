@@ -37,7 +37,7 @@ export default async function handler(request, response) {
     return response.status(500).json({ error: "YouTube API key is not configured." });
   }
 
-  const apiUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${encodeURIComponent(playlistId)}&maxResults=40&pageToken=${pageToken}&key=${API_KEY}`;
+  const apiUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${encodeURIComponent(playlistId)}&maxResults=50&pageToken=${pageToken}&key=${API_KEY}`;
 
   try {
     const ytResponse = await fetch(apiUrl);

@@ -8,6 +8,7 @@ let isSearching = false;
 const resultsContainer = document.getElementById('results');
 const statusMessageEl = document.getElementById('statusMessage'); 
 const form = document.getElementById('searchForm');
+const RENDER_BATCH_SIZE = 5;
 
 function updateStatus(message, isError = false) {
     statusMessageEl.textContent = message;
@@ -19,8 +20,8 @@ form.addEventListener('submit', async function (event) {
     isSearching = false; 
     
     allFetchedItems = [];
-    resultsContainer.innerHTML = ''; 
-    updateStatus('Loading...'); 
+    resultsContainer.innerHTML = '';
+    updateStatus('Loading...');
 
     currentPlaylistUrl = document.getElementById('playlistUrl').value.trim();
     currentSearchTerm = document.getElementById('searchTerm').value.trim().toLowerCase();
@@ -36,17 +37,18 @@ form.addEventListener('submit', async function (event) {
 
 async function progressiveSearch() {
     let nextPageToken = '';
+    let pageCount = 0; 
 
     do {
         if (!isSearching) {
-            updateStatus(''); 
+            updateStatus('');
             return; 
         }
 
         const { items, nextToken, error } = await fetchPlaylistPage(currentPlaylistUrl, nextPageToken);
 
         if (error) {
-            updateStatus(error, true); 
+            updateStatus(error, true);
             isSearching = false;
             return;
         }
@@ -54,19 +56,21 @@ async function progressiveSearch() {
         if (items && items.length > 0) {
             allFetchedItems = allFetchedItems.concat(items);
         }
-        
-        renderResults(); 
+
+        pageCount++;
+        if (pageCount % RENDER_BATCH_SIZE === 0 || !nextToken) {
+            renderResults(); 
+        }
         
         nextPageToken = nextToken;
 
     } while (nextPageToken);
-
     if (allFetchedItems.length === 0) {
         updateStatus('No videos found in this playlist.');
     } else if (filterItems(allFetchedItems, currentSearchTerm, document.getElementById('wholeWordMatch')?.checked, document.querySelector('input[name="searchMode"]:checked')?.value || 'title').length === 0) {
         updateStatus('No videos found matching your criteria.');
     } else {
-        updateStatus(''); 
+        updateStatus('');
     }
 
     isSearching = false;
