@@ -1,5 +1,3 @@
-// Load all your API keys from environment variables into an array.
-// The .filter(Boolean) will remove any keys that are not set.
 const apiKeys = [
   process.env.YOUTUBE_API_KEY,
   process.env.YOUTUBE_API_KEY2,
@@ -8,8 +6,6 @@ const apiKeys = [
   process.env.YOUTUBE_API_KEY5,
 ].filter(Boolean);
 
-// This index will track which key to use next. It's kept outside the handler
-// to persist between function invocations on the same Vercel instance.
 let keyIndex = 0;
 
 function extractPlaylistId(url) {
@@ -63,18 +59,12 @@ export default async function handler(request, response) {
   if (request.method === 'OPTIONS') return response.status(200).end();
   if (request.method !== 'GET') return response.status(405).json({ error: 'Method Not Allowed' });
 
-  // Check if any API keys are configured.
   if (apiKeys.length === 0) {
     return response.status(500).json({ error: "No YouTube API keys are configured on the server." });
   }
 
-  // --- Key Rotation Logic ---
-  // Select the next key in the array.
   const API_KEY = apiKeys[keyIndex];
-  // Move the index to the next key for the subsequent request.
-  // The modulo operator (%) ensures the index wraps around to 0 when it reaches the end.
   keyIndex = (keyIndex + 1) % apiKeys.length;
-  // --- End of Key Rotation Logic ---
   
   const { searchParams } = new URL(request.url, `http://${request.headers.host}`);
   const playlistUrl = searchParams.get('playlistUrl');
@@ -113,7 +103,6 @@ export default async function handler(request, response) {
 
     const channelIds = [...new Set(itemsRaw.map(i => i.channelId).filter(Boolean))];
 
-    // Pass the selected API_KEY to the channel fetcher as well.
     const channelHandleMap = await fetchChannelHandlesForIds(channelIds, API_KEY);
 
     const items = itemsRaw.map(it => ({
