@@ -18,18 +18,18 @@ export function filterItems(items, searchTerm, wholeWordOnly, searchMode) {
         : title.includes(term) || description.includes(term);
 
     } else if (searchMode === 'channel') {
-      if (!item.channelTitle) return false;
-      const standardTerm = searchTerm; 
-      const handleTerm = (searchTerm.startsWith('@') ? searchTerm.substring(1) : searchTerm).replace(/\s+/g, '');
-      const channelTitle = item.channelTitle;
-      const channelHandleStyle = item.channelTitle.replace(/\s+/g, '');
-      
+      const channelTitle = (item.channelTitle || '').toLowerCase();
+      const standardTerm = searchTerm.trim().toLowerCase();
+      const handleTerm = (standardTerm.startsWith('@') ? standardTerm.substring(1) : standardTerm).replace(/\s+/g, '');
+      const channelHandleRaw = item.channelHandle || ''; 
+      const channelHandleNormalized = channelHandleRaw.toLowerCase().replace(/^\@/, '').replace(/\s+/g, '');
+
       if (wholeWordOnly) {
-        const standardPattern = new RegExp(`\\b${escapeRegExp(standardTerm)}\\b`, 'i');
+        const titlePattern = new RegExp(`\\b${escapeRegExp(standardTerm)}\\b`, 'i');
         const handlePattern = new RegExp(`\\b${escapeRegExp(handleTerm)}\\b`, 'i');
-        return standardPattern.test(channelTitle) || handlePattern.test(channelHandleStyle);
+        return titlePattern.test(channelTitle) || handlePattern.test(channelHandleNormalized);
       } else {
-        return channelTitle.toLowerCase().includes(standardTerm.toLowerCase()) || channelHandleStyle.toLowerCase().includes(handleTerm.toLowerCase());
+        return channelTitle.includes(standardTerm) || channelHandleNormalized.includes(handleTerm);
       }
 
     } else { 

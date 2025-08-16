@@ -12,6 +12,37 @@ function extractPlaylistId(url) {
   }
 }
 
+async function fetchChannelHandlesForIds(channelIds = []) {
+  const map = {}; 
+  if (!channelIds || channelIds.length === 0) return map;
+
+  const CHUNK_SIZE = 50;
+  for (let i = 0; i < channelIds.length; i += CHUNK_SIZE) {
+    const chunk = channelIds.slice(i, i + CHUNK_SIZE);
+    const url = `https://www.googleapis.com/youtube/v3/channels?part=snippet&id=${encodeURIComponent(chunk.join(','))}&key=${API_KEY}`;
+
+    try {
+      const resp = await fetch(url);
+      const data = await resp.json();
+      if (data && Array.isArray(data.items)) {
+        data.items.forEach(ch => {
+          const id = ch.id;
+          const custom = ch.snippet?.customUrl || null;
+          if (custom) {
+            map[id] = custom.startsWith('@') ? custom : `@${custom}`;
+          } else {
+            map[id] = null;
+          }
+        });
+      }
+    } catch (e) {
+      console.error("Error fetching channel info:", e);
+    }
+  }
+
+  return map;
+}
+
 export default async function handler(request, response) {
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -47,17 +78,26 @@ export default async function handler(request, response) {
       throw new Error(`YouTube API Error: ${data.error.message} (Code: ${data.error.code})`);
     }
 
-    const items = (data.items || []).map(item => ({
+    const itemsRaw = (data.items || []).map(item => ({
       videoId: item.snippet?.resourceId?.videoId,
       title: item.snippet?.title,
       channelTitle: item.snippet?.videoOwnerChannelTitle,
-      channelId: item.snippet?.videoOwnerChannelId, 
+      channelId: item.snippet?.videoOwnerChannelId,
       description: item.snippet?.description || '',
       thumbnailUrl: item.snippet?.thumbnails?.medium?.url,
       videoUrl: item.snippet?.resourceId?.videoId
         ? `https://www.youtube.com/watch?v=${item.snippet.resourceId.videoId}`
         : null
     })).filter(item => item.videoId && item.title);
+
+    const channelIds = [...new Set(itemsRaw.map(i => i.channelId).filter(Boolean))];
+
+    const channelHandleMap = await fetchChannelHandlesForIds(channelIds);
+
+    const items = itemsRaw.map(it => ({
+      ...it,
+      channelHandle: it.channelId ? (channelHandleMap[it.channelId] || null) : null
+    }));
 
     return response.status(200).json({
       items,
