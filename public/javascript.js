@@ -1,111 +1,135 @@
 import { filterItems } from './searchFilter.js';
 
-// --- helper DOM refs (adjust selectors to your markup) ---
-const playlistInput = document.getElementById('playlistUrl'); // your playlist URL input
-const maxPagesInput = document.getElementById('maxPages');   // the new input
-const searchBtn = document.getElementById('searchBtn');      // your search button
-const resultsContainer = document.getElementById('results'); // where results are shown
-const fetchStatus = document.getElementById('fetchStatus');  // progress display
+let allFetchedItems = [];
+let currentSearchTerm = '';
+let currentPlaylistUrl = '';
+let isSearching = false;
 
-// --- simple spinner utility ---
-function setLoading(isLoading, text = '') {
-  if (isLoading) {
-    fetchStatus.innerHTML = `<span>Loading… ${text}</span>`;
-  } else {
-    if (!text) fetchStatus.textContent = '';
-    else fetchStatus.innerHTML = text;
-  }
+const resultsContainer = document.getElementById('results');
+const statusMessageEl = document.getElementById('statusMessage'); 
+const form = document.getElementById('searchForm');
+
+function updateStatus(message, isError = false) {
+    statusMessageEl.textContent = message;
+    statusMessageEl.className = isError ? 'status-error' : 'status-info';
 }
 
-// --- safe JSON parse for possible non-JSON responses ---
-async function safeParseJSON(response) {
-  const text = await response.text().catch(() => null);
-  if (!text) return null;
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    // Not JSON — return the raw text inside an object for error display
-    return { __rawText: text };
-  }
-}
+form.addEventListener('submit', async function (event) {
+    event.preventDefault();
+    isSearching = false; 
+    
+    allFetchedItems = [];
+    resultsContainer.innerHTML = ''; 
+    updateStatus('Loading...'); 
 
-// --- fetch playlist items from server API ---
-// returns { items:[], fetchedPages, requestedMaxPages } or throws
-async function fetchPlaylistFromServer(playlistUrl, maxPages = 20) {
-  const url = `/api/fetchPlaylist?playlistUrl=${encodeURIComponent(playlistUrl)}&maxPages=${encodeURIComponent(maxPages)}`;
-  const resp = await fetch(url);
-  // attempt robust parse
-  const parsed = await safeParseJSON(resp);
-  if (!resp.ok) {
-    const errMsg = parsed && parsed.error ? parsed.error : (parsed && parsed.__rawText ? parsed.__rawText : `HTTP ${resp.status}`);
-    throw new Error(`Server error: ${errMsg}`);
-  }
-  if (parsed && parsed.__rawText) {
-    // server returned non-JSON text (unexpected)
-    throw new Error(`Server returned non-JSON: ${parsed.__rawText.slice(0,300)}`);
-  }
-  return parsed;
-}
+    currentPlaylistUrl = document.getElementById('playlistUrl').value.trim();
+    currentSearchTerm = document.getElementById('searchTerm').value.trim().toLowerCase();
 
-// --- render single item (customize markup to your liking) ---
-function renderItem(item) {
-  const div = document.createElement('div');
-  div.className = 'search-result-item';
-  const handleHtml = item.channelHandle ? `<span class="channel-handle">${item.channelHandle}</span>` : '';
-  div.innerHTML = `
-    <a href="${item.videoUrl}" target="_blank" rel="noopener noreferrer">
-      <img src="${item.thumbnailUrl || ''}" alt="" style="width:120px; height:auto; display:inline-block; vertical-align:middle; margin-right:8px" />
-    </a>
-    <div style="display:inline-block; vertical-align:middle; max-width:70%">
-      <div class="title"><a href="${item.videoUrl}" target="_blank">${escapeHtml(item.title)}</a></div>
-      <div class="meta">
-        <strong class="channel">${escapeHtml(item.channelTitle || 'Unknown')}</strong>
-        ${handleHtml}
-      </div>
-      <div class="desc">${escapeHtml(item.description || '').slice(0,200)}</div>
-    </div>
-  `;
-  return div;
-}
-
-// small helper to prevent injection
-function escapeHtml(s='') {
-  return String(s).replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]));
-}
-
-// --- entry point for search button ---
-searchBtn.addEventListener('click', async (e) => {
-  e.preventDefault();
-  const playlistUrl = playlistInput.value.trim();
-  if (!playlistUrl) {
-    fetchStatus.textContent = 'Enter a playlist URL first.';
-    return;
-  }
-
-  const maxPages = Math.min(50, Math.max(1, parseInt(maxPagesInput.value || '20', 10)));
-  resultsContainer.innerHTML = '';
-  setLoading(true, `requesting up to ${maxPages} pages (this may take a few seconds)`);
-
-  try {
-    const resp = await fetchPlaylistFromServer(playlistUrl, maxPages);
-    // server returns items + fetchedPages
-    const items = resp.items || [];
-    const fetched = resp.fetchedPages || 0;
-    setLoading(false, `Fetched pages: ${fetched}. Videos returned: ${items.length}`);
-
-    // Render items (simple)
-    if (!items.length) {
-      resultsContainer.innerHTML = '<div>No videos found.</div>';
-      return;
+    if (!currentPlaylistUrl) {
+        updateStatus('Please enter a playlist URL.', true);
+        return;
     }
-    const frag = document.createDocumentFragment();
-    for (const it of items) {
-      frag.appendChild(renderItem(it));
-    }
-    resultsContainer.appendChild(frag);
 
-  } catch (err) {
-    setLoading(false, `Error: ${err.message}`);
-    console.error('Fetch or parse error:', err);
-  }
+    isSearching = true;
+    await progressiveSearch();
+});
+
+async function progressiveSearch() {
+    let nextPageToken = '';
+
+    do {
+        if (!isSearching) {
+            updateStatus(''); 
+            return; 
+        }
+
+        const { items, nextToken, error } = await fetchPlaylistPage(currentPlaylistUrl, nextPageToken);
+
+        if (error) {
+            updateStatus(error, true); 
+            isSearching = false;
+            return;
+        }
+        
+        if (items && items.length > 0) {
+            allFetchedItems = allFetchedItems.concat(items);
+        }
+        
+        renderResults(); 
+        
+        nextPageToken = nextToken;
+
+    } while (nextPageToken);
+
+    if (allFetchedItems.length === 0) {
+        updateStatus('No videos found in this playlist.');
+    } else if (filterItems(allFetchedItems, currentSearchTerm, document.getElementById('wholeWordMatch')?.checked, document.querySelector('input[name="searchMode"]:checked')?.value || 'title').length === 0) {
+        updateStatus('No videos found matching your criteria.');
+    } else {
+        updateStatus(''); 
+    }
+
+    isSearching = false;
+}
+
+async function fetchPlaylistPage(playlistUrl, pageToken = '') {
+    try {
+        const apiUrl = `/api/fetchPlaylist?playlistUrl=${encodeURIComponent(playlistUrl)}&pageToken=${encodeURIComponent(pageToken)}`;
+        const response = await fetch(apiUrl);
+        const data = await response.json();
+
+        if (!response.ok || data.error) {
+            return { error: data.error || `Failed to fetch playlist data (Status: ${response.status})` };
+        }
+
+        return {
+            items: data.items || [],
+            nextToken: data.nextPageToken || null
+        };
+    } catch (err) {
+        console.error("Fetch Error:", err);
+        return { error: `Network or fetch error: ${err.message}` };
+    }
+}
+
+function renderResults() {
+    const matchWholeWord = document.getElementById('wholeWordMatch')?.checked;
+    const selectedMode = document.querySelector('input[name="searchMode"]:checked')?.value || 'title';
+    const filtered = filterItems(allFetchedItems, currentSearchTerm, matchWholeWord, selectedMode);
+
+    resultsContainer.innerHTML = '';
+
+    if (filtered.length > 0) {
+        filtered.forEach(item => {
+            const { title, thumbnailUrl, videoUrl, channelTitle, channelId } = item;
+            if (!title || !thumbnailUrl || !videoUrl) {
+                console.warn("Skipping item with missing data:", item);
+                return;
+            }
+            const li = document.createElement('li');
+            li.className = 'video-item';
+            
+            li.innerHTML = `
+                <img src="${thumbnailUrl}" alt="${title} thumbnail" loading="lazy" />
+                <div class="video-info">
+                    <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">${title}</a>
+                    
+                    <div class="channel-info-container">
+                        <span class="youtube-channel-text">youtube channel: </span>
+                        ${channelId ? `<a href="https://www.youtube.com/channel/${channelId}" class="channel-link" target="_blank" rel="noopener noreferrer">${channelTitle || ''}</a>` : `<span class="channel-name">${channelTitle || ''}</span>`}
+                    </div>
+                </div>
+            `;
+            resultsContainer.appendChild(li);
+        });
+    }
+}
+
+const playlistUrlInput = document.getElementById('playlistUrl');
+playlistUrlInput?.addEventListener('input', () => {
+    if (!playlistUrlInput.value) {
+        playlistUrlInput.setCustomValidity('Please enter a playlist URL.');
+    } else {
+        playlistUrlInput.setCustomValidity('');
+    }
 });
