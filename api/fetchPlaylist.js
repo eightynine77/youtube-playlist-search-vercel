@@ -1,4 +1,16 @@
-const API_KEY = process.env.YOUTUBE_API_KEY;
+// Load all your API keys from environment variables into an array.
+// The .filter(Boolean) will remove any keys that are not set.
+const apiKeys = [
+  process.env.YOUTUBE_API_KEY,
+  process.env.YOUTUBE_API_KEY2,
+  process.env.YOUTUBE_API_KEY3,
+  process.env.YOUTUBE_API_KEY4,
+  process.env.YOUTUBE_API_KEY5,
+].filter(Boolean);
+
+// This index will track which key to use next. It's kept outside the handler
+// to persist between function invocations on the same Vercel instance.
+let keyIndex = 0;
 
 function extractPlaylistId(url) {
   try {
@@ -12,14 +24,14 @@ function extractPlaylistId(url) {
   }
 }
 
-async function fetchChannelHandlesForIds(channelIds = []) {
+async function fetchChannelHandlesForIds(channelIds = [], apiKey) {
   const map = {}; 
   if (!channelIds || channelIds.length === 0) return map;
 
   const CHUNK_SIZE = 50;
   for (let i = 0; i < channelIds.length; i += CHUNK_SIZE) {
     const chunk = channelIds.slice(i, i + CHUNK_SIZE);
-    const url = `https://www.googleapis.com/youtube/v3/channels?part=snippet&id=${encodeURIComponent(chunk.join(','))}&key=${API_KEY}`;
+    const url = `https://www.googleapis.com/youtube/v3/channels?part=snippet&id=${encodeURIComponent(chunk.join(','))}&key=${apiKey}`;
 
     try {
       const resp = await fetch(url);
@@ -51,6 +63,19 @@ export default async function handler(request, response) {
   if (request.method === 'OPTIONS') return response.status(200).end();
   if (request.method !== 'GET') return response.status(405).json({ error: 'Method Not Allowed' });
 
+  // Check if any API keys are configured.
+  if (apiKeys.length === 0) {
+    return response.status(500).json({ error: "No YouTube API keys are configured on the server." });
+  }
+
+  // --- Key Rotation Logic ---
+  // Select the next key in the array.
+  const API_KEY = apiKeys[keyIndex];
+  // Move the index to the next key for the subsequent request.
+  // The modulo operator (%) ensures the index wraps around to 0 when it reaches the end.
+  keyIndex = (keyIndex + 1) % apiKeys.length;
+  // --- End of Key Rotation Logic ---
+  
   const { searchParams } = new URL(request.url, `http://${request.headers.host}`);
   const playlistUrl = searchParams.get('playlistUrl');
   const pageToken = searchParams.get('pageToken') || '';
@@ -62,10 +87,6 @@ export default async function handler(request, response) {
   const playlistId = extractPlaylistId(playlistUrl);
   if (!playlistId) {
     return response.status(400).json({ error: "Invalid YouTube playlist URL. Make sure it's a valid YouTube URL with a 'list=' parameter." });
-  }
-
-  if (!API_KEY) {
-    return response.status(500).json({ error: "YouTube API key is not configured." });
   }
 
   const apiUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${encodeURIComponent(playlistId)}&maxResults=50&pageToken=${pageToken}&key=${API_KEY}`;
@@ -92,7 +113,8 @@ export default async function handler(request, response) {
 
     const channelIds = [...new Set(itemsRaw.map(i => i.channelId).filter(Boolean))];
 
-    const channelHandleMap = await fetchChannelHandlesForIds(channelIds);
+    // Pass the selected API_KEY to the channel fetcher as well.
+    const channelHandleMap = await fetchChannelHandlesForIds(channelIds, API_KEY);
 
     const items = itemsRaw.map(it => ({
       ...it,
