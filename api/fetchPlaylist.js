@@ -110,6 +110,8 @@ export default async function handler(request, response) {
       channelHandle: it.channelId ? (channelHandleMap[it.channelId] || null) : null
     }));
 
+    response.setHeader('Set-Cookie', `ytpl_cached_${playlistId}=1; Max-Age=${10*365*24*60*60}; Path=/; SameSite=Lax; Secure`);
+
     return response.status(200).json({
       items,
       nextPageToken: data.nextPageToken || null
