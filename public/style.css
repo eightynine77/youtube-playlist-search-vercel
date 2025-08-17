@@ -125,6 +125,10 @@ button:hover {
   margin-top: 1em; 
 }
 
+.empty-result {
+  font-size: 1.1em;
+}
+
 .checkbox-group {
   display: flex;
   align-items: center;

@@ -150,7 +150,7 @@ function renderResultsList(itemsToShow) {
   if (!resultsContainer) return;
   clearResults();
   if (!itemsToShow || itemsToShow.length === 0) {
-    resultsContainer.innerHTML = '<li class="empty">No results</li>';
+    resultsContainer.innerHTML = '<li class="empty-result">No results</li>';
     return;
   }
 
