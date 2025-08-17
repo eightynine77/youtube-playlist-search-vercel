@@ -1,9 +1,6 @@
-// javascript.js (replace your existing public/javascript.js with this)
-// Uses IndexedDB to cache playlist pages (permanent until user clears).
-// Keeps UI minimal: NO "Refresh cache" button. Renders channel link below title as requested.
-//
-// Assumes you have a `searchFilter.js` module that exports `filterItems`.
-// If you don't use modules, convert import to a global function call.
+// javascript.js
+// Uses IndexedDB cached playlist pages (forever). No Refresh UI.
+// Renders result layout with channel link under title as requested.
 
 import { filterItems } from './searchFilter.js';
 
@@ -11,6 +8,7 @@ let allFetchedItems = [];
 let currentSearchTerm = '';
 let currentPlaylistUrl = '';
 let isSearching = false;
+let playlistTotal = null; // total number of videos in playlist (if server provides it)
 
 const resultsContainer = document.getElementById('results');
 const statusMessageEl = document.getElementById('statusMessage');
@@ -19,15 +17,13 @@ const form = document.getElementById('searchForm');
 // --- CONFIG ---
 const DB_NAME = 'ytplCache';
 const DB_VER = 1;
-const STORE_PAGES = 'pages';       // object store for pages: key = playlistId:pageToken
-const PLAYLIST_PAGE_TTL_MS = null; // null = "forever" (no expiry)
-const COOKIE_EXPIRY_YEARS = 10;    // pointer cookie lifetime
-const POLITE_DELAY_MS = 60;        // small pause between page fetches
-// Trim fields - include channelHandle in case server provides it
+const STORE_PAGES = 'pages';
+const COOKIE_EXPIRY_YEARS = 10;
+const POLITE_DELAY_MS = 60;
 const TRIM_FIELDS = ['videoId','title','channelTitle','channelId','channelHandle','thumbnailUrl','videoUrl','description'];
 // --------------
 
-// --- IndexedDB wrapper (promise-based) ---
+// --- IndexedDB helpers (same as before) ---
 function openDb() {
   return new Promise((resolve, reject) => {
     if (!('indexedDB' in window)) return reject(new Error('IndexedDB not supported'));
@@ -43,7 +39,6 @@ function openDb() {
     req.onerror = () => reject(req.error || new Error('IndexedDB open failed'));
   });
 }
-
 async function idbGet(key) {
   try {
     const db = await openDb();
@@ -54,11 +49,8 @@ async function idbGet(key) {
       r.onsuccess = () => resolve(r.result ? r.result.value : null);
       r.onerror = () => reject(r.error || new Error('idb get failed'));
     });
-  } catch (e) {
-    return null;
-  }
+  } catch (e) { return null; }
 }
-
 async function idbSet(key, value) {
   try {
     const db = await openDb();
@@ -70,11 +62,8 @@ async function idbSet(key, value) {
       r.onsuccess = () => resolve();
       r.onerror = () => reject(r.error || new Error('idb put failed'));
     });
-  } catch (e) {
-    // fail silently
-  }
+  } catch (e) {}
 }
-
 async function idbDeletePrefix(prefix) {
   try {
     const db = await openDb();
@@ -96,34 +85,17 @@ async function idbDeletePrefix(prefix) {
       };
       req.onerror = () => reject(req.error || new Error('idb cursor failed'));
     });
-  } catch (e) {
-    // ignore
-  }
-}
-
-// --- localStorage fallback ---
-const LS_PREFIX = 'ytpl_ls:';
-function lsGet(key) {
-  try {
-    const raw = localStorage.getItem(LS_PREFIX + key);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch (e) { return null; }
-}
-function lsSet(key, value) {
-  try { localStorage.setItem(LS_PREFIX + key, JSON.stringify(value)); } catch(e){}
-}
-function lsDeletePrefix(prefix) {
-  try {
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const k = localStorage.key(i);
-      if (!k) continue;
-      if (k.startsWith(LS_PREFIX + prefix)) localStorage.removeItem(k);
-    }
   } catch (e) {}
 }
 
-// --- helpers ---
+// localStorage fallback
+const LS_PREFIX = 'ytpl_ls:';
+function lsGet(key) {
+  try { const raw = localStorage.getItem(LS_PREFIX + key); if (!raw) return null; return JSON.parse(raw); } catch (e) { return null; }
+}
+function lsSet(key, value) { try { localStorage.setItem(LS_PREFIX + key, JSON.stringify(value)); } catch (e) {} }
+function lsDeletePrefix(prefix) { try { for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (!k) continue; if (k.startsWith(LS_PREFIX + prefix)) localStorage.removeItem(k); } } catch (e) {} }
+
 function updateStatus(msg, isError = false) {
   if (!statusMessageEl) return;
   statusMessageEl.textContent = msg;
@@ -131,56 +103,36 @@ function updateStatus(msg, isError = false) {
 }
 
 function extractPlaylistId(url) {
-  try {
-    if (!url || typeof url !== 'string') return null;
-    const parsed = new URL(url);
-    if (!parsed.hostname.includes('youtube.com')) return null;
-    return parsed.searchParams.get('list');
-  } catch (e) {
-    return null;
-  }
+  try { if (!url) return null; const parsed = new URL(url); if (!parsed.hostname.includes('youtube.com')) return null; return parsed.searchParams.get('list'); } catch (e) { return null; }
 }
-
 function setLongCookie(name, value='1', years = COOKIE_EXPIRY_YEARS) {
-  try {
-    const d = new Date();
-    d.setFullYear(d.getFullYear() + years);
-    const cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; Expires=${d.toUTCString()}; Path=/; SameSite=Lax; Secure`;
-    document.cookie = cookie;
-  } catch (e){}
+  try { const d = new Date(); d.setFullYear(d.getFullYear() + years); document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; Expires=${d.toUTCString()}; Path=/; SameSite=Lax; Secure`; } catch (e) {}
 }
-
-// Trim video objects to store only necessary fields
 function trimItems(rawItems) {
   return (rawItems || []).map(it => {
     const out = {};
-    for (const f of TRIM_FIELDS) {
-      if (it[f] !== undefined) out[f] = it[f];
-    }
-    // ensure videoUrl exists
+    for (const f of TRIM_FIELDS) if (it[f] !== undefined) out[f] = it[f];
     if (!out.videoUrl && out.videoId) out.videoUrl = `https://www.youtube.com/watch?v=${out.videoId}`;
     return out;
   });
 }
 
-// --- client cache + backend fetch ---
+// --- fetch + client cache ---
 async function fetchPlaylistPageClient(playlistUrl, pageToken = '') {
   const playlistId = extractPlaylistId(playlistUrl);
   if (!playlistId) throw new Error('Invalid playlist URL');
 
   const key = `${playlistId}:${pageToken || ''}`;
 
-  // try IndexedDB first
   const idbAvailable = ('indexedDB' in window);
   if (idbAvailable) {
     const data = await idbGet(key);
-    if (data) return { items: data.items, nextPageToken: data.nextPageToken, fromCache: true };
+    if (data) return { items: data.items, nextPageToken: data.nextPageToken, fromCache: true, totalResults: data.totalResults || null };
   } else {
     const lsData = lsGet(key);
-    if (lsData) return { items: lsData.items, nextPageToken: lsData.nextPageToken, fromCache: true };
+    if (lsData) return { items: lsData.items, nextPageToken: lsData.nextPageToken, fromCache: true, totalResults: lsData.totalResults || null };
   }
 
-  // not cached -> call backend
   const url = `/api/fetchPlaylist?playlistUrl=${encodeURIComponent(playlistUrl)}&pageToken=${encodeURIComponent(pageToken || '')}`;
   const resp = await fetch(url);
   if (!resp.ok) {
@@ -189,9 +141,9 @@ async function fetchPlaylistPageClient(playlistUrl, pageToken = '') {
   }
   const json = await resp.json();
 
-  // trim and save
+  // store trimmed items and include totalResults if provided by server
   const trimmed = trimItems(json.items || []);
-  const payload = { items: trimmed, nextPageToken: json.nextPageToken || null };
+  const payload = { items: trimmed, nextPageToken: json.nextPageToken || null, totalResults: json.totalResults || null };
 
   if (idbAvailable) {
     try { await idbSet(key, payload); } catch (e) { lsSet(key, payload); }
@@ -199,18 +151,13 @@ async function fetchPlaylistPageClient(playlistUrl, pageToken = '') {
     lsSet(key, payload);
   }
 
-  // set pointer cookie (tiny)
   try { setLongCookie(`ytpl_cached_${playlistId}`, '1', COOKIE_EXPIRY_YEARS); } catch (e) {}
 
-  return { items: trimmed, nextPageToken: json.nextPageToken || null, fromCache: false };
+  return { items: trimmed, nextPageToken: json.nextPageToken || null, fromCache: false, totalResults: json.totalResults || null };
 }
 
-// --- rendering ---
-// Uses the exact layout you requested: channel link is right below title.
-function clearResults() {
-  if (!resultsContainer) return;
-  resultsContainer.innerHTML = '';
-}
+// --- rendering: use your exact requested HTML structure ---
+function clearResults() { if (!resultsContainer) return; resultsContainer.innerHTML = ''; }
 function renderResultsList(itemsToShow) {
   if (!resultsContainer) return;
   clearResults();
@@ -248,49 +195,46 @@ function renderResultsList(itemsToShow) {
 async function progressiveSearch() {
   let nextPageToken = '';
   allFetchedItems = [];
+  playlistTotal = null;
   updateStatus('Searching playlist…');
 
   try {
     do {
-      if (!isSearching) {
-        updateStatus('');
-        return;
-      }
+      if (!isSearching) { updateStatus(''); return; }
 
       const result = await (async () => {
-        try {
-          return await fetchPlaylistPageClient(currentPlaylistUrl, nextPageToken);
-        } catch (err) {
-          return { error: err.message || String(err) };
-        }
+        try { return await fetchPlaylistPageClient(currentPlaylistUrl, nextPageToken); } catch (err) { return { error: err.message || String(err) }; }
       })();
 
-      if (result.error) {
-        updateStatus(result.error, true);
-        isSearching = false;
-        return;
+      if (result.error) { updateStatus(result.error, true); isSearching = false; return; }
+
+      if (result.totalResults != null && !playlistTotal) {
+        // capture playlist total (first time we see it)
+        playlistTotal = Number(result.totalResults) || null;
       }
 
       if (result.items && result.items.length) {
         allFetchedItems = allFetchedItems.concat(result.items);
       }
 
-      // search/filter over the items cached so far
       const wholeWordOnly = !!document.querySelector('input[name="wholeWordOnly"]')?.checked;
       const searchMode = document.querySelector('input[name="searchMode"]:checked')?.value || 'title';
       const filtered = filterItems(allFetchedItems, currentSearchTerm, wholeWordOnly, searchMode);
 
       renderResultsList(filtered);
 
-      // Show how many videos have been *searched* so far (user requested wording)
-      updateStatus(`Searched ${allFetchedItems.length} videos`);
+      // Show loading style status: "Searching X of Y videos" or "Searching X videos" if Y unknown
+      if (playlistTotal && Number.isFinite(playlistTotal)) {
+        updateStatus(`Searching ${allFetchedItems.length} of ${playlistTotal} videos`);
+      } else {
+        updateStatus(`Searching ${allFetchedItems.length} videos`);
+      }
 
       nextPageToken = result.nextPageToken || null;
-
       await new Promise(r => setTimeout(r, POLITE_DELAY_MS));
     } while (nextPageToken);
 
-    // final friendly message
+    // done
     updateStatus(`Done — searched ${allFetchedItems.length} videos`);
   } catch (err) {
     console.error('progressiveSearch error:', err);
@@ -300,16 +244,13 @@ async function progressiveSearch() {
   }
 }
 
-// --- UI wiring (NO refresh button) ---
+// --- UI wiring ---
 if (form) {
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     currentPlaylistUrl = document.getElementById('playlistUrl')?.value?.trim() || '';
     currentSearchTerm = document.getElementById('searchTerm')?.value?.trim() || '';
-    if (!currentPlaylistUrl) {
-      updateStatus('Please enter a playlist URL.', true);
-      return;
-    }
+    if (!currentPlaylistUrl) { updateStatus('Please enter a playlist URL.', true); return; }
     isSearching = true;
     allFetchedItems = [];
     await progressiveSearch();

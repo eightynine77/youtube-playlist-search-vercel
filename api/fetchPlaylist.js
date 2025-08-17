@@ -115,6 +115,7 @@ export default async function handler(request, response) {
     return response.status(200).json({
       items,
       nextPageToken: data.nextPageToken || null
+      totalResults: data.pageInfo?.totalResults || null
     });
 
   } catch (error) {
