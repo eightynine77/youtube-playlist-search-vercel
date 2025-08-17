@@ -203,7 +203,7 @@ async function progressiveSearch() {
         allFetchedItems = allFetchedItems.concat(result.items);
       }
 
-      const wholeWordOnly = !!document.querySelector('input[name="wholeWordOnly"]')?.checked;
+      const wholeWordOnly = !!document.getElementById('wholeWordMatch')?.checked;
       const searchMode = document.querySelector('input[name="searchMode"]:checked')?.value || 'title';
       const filtered = filterItems(allFetchedItems, currentSearchTerm, wholeWordOnly, searchMode);
 
