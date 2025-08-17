@@ -1,29 +1,21 @@
-// javascript.js
-// Uses IndexedDB cached playlist pages (forever). No Refresh UI.
-// Renders result layout with channel link under title as requested.
-
 import { filterItems } from './searchFilter.js';
 
 let allFetchedItems = [];
 let currentSearchTerm = '';
 let currentPlaylistUrl = '';
 let isSearching = false;
-let playlistTotal = null; // total number of videos in playlist (if server provides it)
+let playlistTotal = null; 
 
 const resultsContainer = document.getElementById('results');
 const statusMessageEl = document.getElementById('statusMessage');
 const form = document.getElementById('searchForm');
-
-// --- CONFIG ---
 const DB_NAME = 'ytplCache';
 const DB_VER = 1;
 const STORE_PAGES = 'pages';
 const COOKIE_EXPIRY_YEARS = 10;
 const POLITE_DELAY_MS = 60;
 const TRIM_FIELDS = ['videoId','title','channelTitle','channelId','channelHandle','thumbnailUrl','videoUrl','description'];
-// --------------
 
-// --- IndexedDB helpers (same as before) ---
 function openDb() {
   return new Promise((resolve, reject) => {
     if (!('indexedDB' in window)) return reject(new Error('IndexedDB not supported'));
@@ -88,7 +80,6 @@ async function idbDeletePrefix(prefix) {
   } catch (e) {}
 }
 
-// localStorage fallback
 const LS_PREFIX = 'ytpl_ls:';
 function lsGet(key) {
   try { const raw = localStorage.getItem(LS_PREFIX + key); if (!raw) return null; return JSON.parse(raw); } catch (e) { return null; }
@@ -117,7 +108,6 @@ function trimItems(rawItems) {
   });
 }
 
-// --- fetch + client cache ---
 async function fetchPlaylistPageClient(playlistUrl, pageToken = '') {
   const playlistId = extractPlaylistId(playlistUrl);
   if (!playlistId) throw new Error('Invalid playlist URL');
@@ -141,7 +131,6 @@ async function fetchPlaylistPageClient(playlistUrl, pageToken = '') {
   }
   const json = await resp.json();
 
-  // store trimmed items and include totalResults if provided by server
   const trimmed = trimItems(json.items || []);
   const payload = { items: trimmed, nextPageToken: json.nextPageToken || null, totalResults: json.totalResults || null };
 
@@ -156,7 +145,6 @@ async function fetchPlaylistPageClient(playlistUrl, pageToken = '') {
   return { items: trimmed, nextPageToken: json.nextPageToken || null, fromCache: false, totalResults: json.totalResults || null };
 }
 
-// --- rendering: use your exact requested HTML structure ---
 function clearResults() { if (!resultsContainer) return; resultsContainer.innerHTML = ''; }
 function renderResultsList(itemsToShow) {
   if (!resultsContainer) return;
@@ -191,7 +179,6 @@ function renderResultsList(itemsToShow) {
   });
 }
 
-// --- progressive search (sequential) ---
 async function progressiveSearch() {
   let nextPageToken = '';
   allFetchedItems = [];
@@ -209,7 +196,6 @@ async function progressiveSearch() {
       if (result.error) { updateStatus(result.error, true); isSearching = false; return; }
 
       if (result.totalResults != null && !playlistTotal) {
-        // capture playlist total (first time we see it)
         playlistTotal = Number(result.totalResults) || null;
       }
 
@@ -223,7 +209,6 @@ async function progressiveSearch() {
 
       renderResultsList(filtered);
 
-      // Show loading style status: "Searching X of Y videos" or "Searching X videos" if Y unknown
       if (playlistTotal && Number.isFinite(playlistTotal)) {
         updateStatus(`Searching ${allFetchedItems.length} of ${playlistTotal} videos`);
       } else {
@@ -234,7 +219,6 @@ async function progressiveSearch() {
       await new Promise(r => setTimeout(r, POLITE_DELAY_MS));
     } while (nextPageToken);
 
-    // done
     updateStatus(`Done — searched ${allFetchedItems.length} videos`);
   } catch (err) {
     console.error('progressiveSearch error:', err);
@@ -244,7 +228,6 @@ async function progressiveSearch() {
   }
 }
 
-// --- UI wiring ---
 if (form) {
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
