@@ -61,13 +61,9 @@ export default async function handler(request, response) {
   if (apiKeys.length === 0) {
     return response.status(500).json({ error: "No YouTube API keys are configured on the server." });
   }
-
-  const API_KEY = apiKeys[keyIndex];
-  keyIndex = (keyIndex + 1) % apiKeys.length;
   
   const { searchParams } = new URL(request.url, `http://${request.headers.host}`);
   const playlistUrl = searchParams.get('playlistUrl');
-  const pageToken = searchParams.get('pageToken') || '';
 
   if (!playlistUrl) {
     return response.status(400).json({ error: "Missing 'playlistUrl' query parameter." });
@@ -78,33 +74,52 @@ export default async function handler(request, response) {
     return response.status(400).json({ error: "Invalid YouTube playlist URL. Make sure it's a valid YouTube URL with a 'list=' parameter." });
   }
 
-  const apiUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${encodeURIComponent(playlistId)}&maxResults=50&pageToken=${pageToken}&key=${API_KEY}`;
+  const allItemsRaw = [];
+  let pageToken = '';
+  let totalResults = null;
 
   try {
-    const ytResponse = await fetch(apiUrl);
-    const data = await ytResponse.json();
+    do {
+      const API_KEY = apiKeys[keyIndex];
+      keyIndex = (keyIndex + 1) % apiKeys.length;
 
-    if (data.error) {
-      throw new Error(`YouTube API Error: ${data.error.message} (Code: ${data.error.code})`);
-    }
+      const apiUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${encodeURIComponent(playlistId)}&maxResults=50&pageToken=${pageToken}&key=${API_KEY}`;
+      
+      const ytResponse = await fetch(apiUrl);
+      const data = await ytResponse.json();
 
-    const itemsRaw = (data.items || []).map(item => ({
-      videoId: item.snippet?.resourceId?.videoId,
-      title: item.snippet?.title,
-      channelTitle: item.snippet?.videoOwnerChannelTitle,
-      channelId: item.snippet?.videoOwnerChannelId,
-      description: item.snippet?.description || '',
-      thumbnailUrl: item.snippet?.thumbnails?.medium?.url,
-      videoUrl: item.snippet?.resourceId?.videoId
-        ? `https://www.youtube.com/watch?v=${item.snippet.resourceId.videoId}`
-        : null
-    })).filter(item => item.videoId && item.title);
+      if (data.error) {
+        throw new Error(`YouTube API Error: ${data.error.message} (Code: ${data.error.code})`);
+      }
+      
+      if (data.pageInfo?.totalResults && totalResults === null) {
+          totalResults = data.pageInfo.totalResults;
+      }
 
-    const channelIds = [...new Set(itemsRaw.map(i => i.channelId).filter(Boolean))];
+      const itemsFromPage = (data.items || []).map(item => ({
+        videoId: item.snippet?.resourceId?.videoId,
+        title: item.snippet?.title,
+        channelTitle: item.snippet?.videoOwnerChannelTitle,
+        channelId: item.snippet?.videoOwnerChannelId,
+        description: item.snippet?.description || '',
+        thumbnailUrl: item.snippet?.thumbnails?.medium?.url,
+        videoUrl: item.snippet?.resourceId?.videoId
+          ? `https://www.youtube.com/watch?v=${item.snippet.resourceId.videoId}`
+          : null
+      })).filter(item => item.videoId && item.title);
 
-    const channelHandleMap = await fetchChannelHandlesForIds(channelIds, API_KEY);
+      allItemsRaw.push(...itemsFromPage);
+      pageToken = data.nextPageToken || null;
 
-    const items = itemsRaw.map(it => ({
+    } while (pageToken);
+
+    const channelIds = [...new Set(allItemsRaw.map(i => i.channelId).filter(Boolean))];
+    
+    const handleApiKey = apiKeys[keyIndex]; 
+    keyIndex = (keyIndex + 1) % apiKeys.length;
+    const channelHandleMap = await fetchChannelHandlesForIds(channelIds, handleApiKey);
+
+    const items = allItemsRaw.map(it => ({
       ...it,
       channelHandle: it.channelId ? (channelHandleMap[it.channelId] || null) : null
     }));
@@ -113,8 +128,7 @@ export default async function handler(request, response) {
 
     return response.status(200).json({
       items,
-      nextPageToken: data.nextPageToken || null,
-      totalResults: data.pageInfo?.totalResults || null
+      totalResults: totalResults ?? allItemsRaw.length
     });
 
   } catch (error) {

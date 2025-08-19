@@ -1,10 +1,9 @@
-import { filterItems } from './searchFilter.js'; //
+import { filterItems } from './searchFilter.js';
 
 let allFetchedItems = [];
 let currentSearchTerm = '';
 let currentPlaylistUrl = '';
 let isSearching = false;
-let playlistTotal = null; 
 
 const resultsContainer = document.getElementById('results');
 const statusMessageEl = document.getElementById('statusMessage');
@@ -13,7 +12,6 @@ const DB_NAME = 'ytplCache';
 const DB_VER = 1;
 const STORE_PAGES = 'pages';
 const COOKIE_EXPIRY_YEARS = 10;
-const POLITE_DELAY_MS = 60;
 const TRIM_FIELDS = ['videoId','title','channelTitle','channelId','channelHandle','thumbnailUrl','videoUrl','description'];
 
 function openDb() {
@@ -108,41 +106,41 @@ function trimItems(rawItems) {
   });
 }
 
-async function fetchPlaylistPageClient(playlistUrl, pageToken = '') {
-  const playlistId = extractPlaylistId(playlistUrl);
-  if (!playlistId) throw new Error('Invalid playlist URL');
+async function fetchEntirePlaylistClient(playlistUrl) {
+    const playlistId = extractPlaylistId(playlistUrl);
+    if (!playlistId) throw new Error('Invalid playlist URL');
 
-  const key = `${playlistId}:${pageToken || ''}`;
+    const key = playlistId;
+    const idbAvailable = ('indexedDB' in window);
+    
+    if (idbAvailable) {
+        const data = await idbGet(key);
+        if (data) return { items: data.items, fromCache: true, totalResults: data.totalResults };
+    } else {
+        const lsData = lsGet(key);
+        if (lsData) return { items: lsData.items, fromCache: true, totalResults: lsData.totalResults };
+    }
 
-  const idbAvailable = ('indexedDB' in window);
-  if (idbAvailable) {
-    const data = await idbGet(key);
-    if (data) return { items: data.items, nextPageToken: data.nextPageToken, fromCache: true, totalResults: data.totalResults || null };
-  } else {
-    const lsData = lsGet(key);
-    if (lsData) return { items: lsData.items, nextPageToken: lsData.nextPageToken, fromCache: true, totalResults: lsData.totalResults || null };
-  }
+    const url = `/api/fetchPlaylist?playlistUrl=${encodeURIComponent(playlistUrl)}`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(`Server returned ${resp.status}: ${text}`);
+    }
+    const json = await resp.json();
 
-  const url = `/api/fetchPlaylist?playlistUrl=${encodeURIComponent(playlistUrl)}&pageToken=${encodeURIComponent(pageToken || '')}`;
-  const resp = await fetch(url);
-  if (!resp.ok) {
-    const text = await resp.text();
-    throw new Error(`Server returned ${resp.status}: ${text}`);
-  }
-  const json = await resp.json();
+    const trimmed = trimItems(json.items || []);
+    const payload = { items: trimmed, totalResults: json.totalResults || null };
 
-  const trimmed = trimItems(json.items || []);
-  const payload = { items: trimmed, nextPageToken: json.nextPageToken || null, totalResults: json.totalResults || null };
+    if (idbAvailable) {
+        try { await idbSet(key, payload); } catch (e) { lsSet(key, payload); }
+    } else {
+        lsSet(key, payload);
+    }
 
-  if (idbAvailable) {
-    try { await idbSet(key, payload); } catch (e) { lsSet(key, payload); }
-  } else {
-    lsSet(key, payload);
-  }
+    try { setLongCookie(`ytpl_cached_${playlistId}`, '1', COOKIE_EXPIRY_YEARS); } catch (e) {}
 
-  try { setLongCookie(`ytpl_cached_${playlistId}`, '1', COOKIE_EXPIRY_YEARS); } catch (e) {}
-
-  return { items: trimmed, nextPageToken: json.nextPageToken || null, fromCache: false, totalResults: json.totalResults || null };
+    return { items: trimmed, fromCache: false, totalResults: json.totalResults || null };
 }
 
 function clearResults() { if (!resultsContainer) return; resultsContainer.innerHTML = ''; }
@@ -179,64 +177,62 @@ function renderResultsList(itemsToShow) {
   });
 }
 
-async function progressiveSearch() {
-  let nextPageToken = '';
-  allFetchedItems = [];
-  playlistTotal = null;
-  updateStatus('Searching playlist…');
+async function performSearch() {
+    isSearching = true;
+    allFetchedItems = [];
+    clearResults();
+    
+    updateStatus('Fetching all videos from playlist… This may take a moment.');
 
-  try {
-    do {
-      if (!isSearching) { updateStatus(''); return; }
+    try {
+        const result = await fetchEntirePlaylistClient(currentPlaylistUrl);
+        
+        if (!isSearching) {
+            updateStatus('');
+            return;
+        }
 
-      const result = await (async () => {
-        try { return await fetchPlaylistPageClient(currentPlaylistUrl, nextPageToken); } catch (err) { return { error: err.message || String(err) }; }
-      })();
+        allFetchedItems = result.items || [];
+        const totalVideos = result.totalResults || allFetchedItems.length;
 
-      if (result.error) { updateStatus(result.error, true); isSearching = false; return; }
+        updateStatus(`Searching through ${totalVideos} videos...`);
+        
+        await new Promise(r => setTimeout(r, 50)); 
 
-      if (result.totalResults != null && !playlistTotal) {
-        playlistTotal = Number(result.totalResults) || null;
-      }
+        const wholeWordOnly = !!document.getElementById('wholeWordMatch')?.checked;
+        const searchMode = document.querySelector('input[name="searchMode"]:checked')?.value || 'title';
+        
+        const filtered = filterItems(allFetchedItems, currentSearchTerm, wholeWordOnly, searchMode);
+        
+        renderResultsList(filtered);
 
-      if (result.items && result.items.length) {
-        allFetchedItems = allFetchedItems.concat(result.items);
-      }
+        updateStatus(`Done — Found ${filtered.length} results in ${totalVideos} videos.`);
 
-      const wholeWordOnly = !!document.getElementById('wholeWordMatch')?.checked;
-      const searchMode = document.querySelector('input[name="searchMode"]:checked')?.value || 'title';
-      const filtered = filterItems(allFetchedItems, currentSearchTerm, wholeWordOnly, searchMode);
-
-      renderResultsList(filtered);
-
-      if (playlistTotal && Number.isFinite(playlistTotal)) {
-        updateStatus(`Searching ${allFetchedItems.length} of ${playlistTotal} videos`);
-      } else {
-        updateStatus(`Searching ${allFetchedItems.length} videos`);
-      }
-
-      nextPageToken = result.nextPageToken || null;
-      await new Promise(r => setTimeout(r, POLITE_DELAY_MS));
-    } while (nextPageToken);
-
-    updateStatus(`Done — searched ${allFetchedItems.length} videos`);
-  } catch (err) {
-    console.error('progressiveSearch error:', err);
-    updateStatus('An error occurred: ' + (err.message || err), true);
-  } finally {
-    isSearching = false;
-  }
+    } catch (err) {
+        console.error('performSearch error:', err);
+        updateStatus('An error occurred: ' + (err.message || err), true);
+    } finally {
+        isSearching = false;
+    }
 }
+
 
 if (form) {
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
+    isSearching = false;
+
     currentPlaylistUrl = document.getElementById('playlistUrl')?.value?.trim() || '';
     currentSearchTerm = document.getElementById('searchTerm')?.value?.trim() || '';
-    if (!currentPlaylistUrl) { updateStatus('Please enter a playlist URL.', true); return; }
-    isSearching = true;
-    allFetchedItems = [];
-    await progressiveSearch();
+    
+    if (!currentPlaylistUrl) {
+      updateStatus('Please enter a playlist URL.', true);
+      return;
+    }
+    
+    setTimeout(() => {
+        performSearch();
+    }, 0);
   });
 }
 
