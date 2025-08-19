@@ -1,4 +1,4 @@
-import { filterItems } from './searchFilter.js';
+import { filterItems } from './searchFilter.js'; //
 
 let allFetchedItems = [];
 let currentSearchTerm = '';
