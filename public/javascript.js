@@ -13,10 +13,10 @@ const DB_NAME = 'ytplCache';
 const DB_VER = 1;
 const STORE_PAGES = 'pages';
 const COOKIE_EXPIRY_YEARS = 10;
-const POLITE_DELAY_MS = 50; 
-const FETCH_CHUNK_SIZE = 4; 
+const FETCH_CHUNK_SIZE = 4; // How many pages to fetch in each burst
 const TRIM_FIELDS = ['videoId','title','channelTitle','channelId','channelHandle','thumbnailUrl','videoUrl','description'];
 
+// All helper functions (openDb, idbGet, idbSet, lsGet, lsSet, etc.) remain the same...
 function openDb() {
   return new Promise((resolve, reject) => {
     if (!('indexedDB' in window)) return reject(new Error('IndexedDB not supported'));
@@ -175,13 +175,14 @@ async function progressiveSearch() {
       const itemsInChunk = [];
       let currentResult;
       
+      // Fetch pages in a rapid burst
       for (let i = 0; i < FETCH_CHUNK_SIZE; i++) {
         currentResult = await fetchPlaylistPageClient(currentPlaylistUrl, nextPageToken);
         if (currentResult.items && currentResult.items.length) {
             itemsInChunk.push(...currentResult.items);
         }
         nextPageToken = currentResult.nextPageToken;
-        if (!nextPageToken) break;
+        if (!nextPageToken) break; // Stop if we've reached the end of the playlist
       }
 
       if (currentResult.totalResults != null && playlistTotal === null) {
@@ -194,15 +195,14 @@ async function progressiveSearch() {
       
       applyFilterAndRender();
 
+      // Update status with current progress
       if (playlistTotal && Number.isFinite(playlistTotal)) {
         updateStatus(`Searching ${allFetchedItems.length} of ${playlistTotal} videos`);
       } else {
         updateStatus(`Searching ${allFetchedItems.length} videos`);
       }
       
-      if(nextPageToken) {
-        await new Promise(r => setTimeout(r, POLITE_DELAY_MS));
-      }
+      // The polite delay has been removed from here to maximize speed.
 
     } while (nextPageToken);
 
@@ -218,12 +218,13 @@ async function progressiveSearch() {
 if (form) {
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
-    isSearching = false; 
+    isSearching = false; // Stop any previous search
     
     currentPlaylistUrl = document.getElementById('playlistUrl')?.value?.trim() || '';
     currentSearchTerm = document.getElementById('searchTerm')?.value?.trim() || '';
     if (!currentPlaylistUrl) { updateStatus('Please enter a playlist URL.', true); return; }
     
+    // Use a timeout to ensure the isSearching flag is processed by any ongoing async operations
     setTimeout(() => {
         isSearching = true;
         progressiveSearch();
