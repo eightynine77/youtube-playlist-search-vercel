@@ -13,10 +13,9 @@ const DB_NAME = 'ytplCache';
 const DB_VER = 1;
 const STORE_PAGES = 'pages';
 const COOKIE_EXPIRY_YEARS = 10;
-const FETCH_CHUNK_SIZE = 4; // How many pages to fetch in each burst
+const FETCH_CHUNK_SIZE = 4; 
 const TRIM_FIELDS = ['videoId','title','channelTitle','channelId','channelHandle','thumbnailUrl','videoUrl','description'];
 
-// All helper functions (openDb, idbGet, idbSet, lsGet, lsSet, etc.) remain the same...
 function openDb() {
   return new Promise((resolve, reject) => {
     if (!('indexedDB' in window)) return reject(new Error('IndexedDB not supported'));
@@ -32,6 +31,7 @@ function openDb() {
     req.onerror = () => reject(req.error || new Error('IndexedDB open failed'));
   });
 }
+
 async function idbGet(key) {
   try {
     const db = await openDb();
@@ -44,6 +44,7 @@ async function idbGet(key) {
     });
   } catch (e) { return null; }
 }
+
 async function idbSet(key, value) {
   try {
     const db = await openDb();
@@ -57,10 +58,12 @@ async function idbSet(key, value) {
     });
   } catch (e) {}
 }
+
 const LS_PREFIX = 'ytpl_ls:';
 function lsGet(key) {
   try { const raw = localStorage.getItem(LS_PREFIX + key); if (!raw) return null; return JSON.parse(raw); } catch (e) { return null; }
 }
+
 function lsSet(key, value) { try { localStorage.setItem(LS_PREFIX + key, JSON.stringify(value)); } catch (e) {} }
 
 function updateStatus(msg, isError = false) {
@@ -72,9 +75,11 @@ function updateStatus(msg, isError = false) {
 function extractPlaylistId(url) {
   try { if (!url) return null; const parsed = new URL(url); if (!parsed.hostname.includes('youtube.com')) return null; return parsed.searchParams.get('list'); } catch (e) { return null; }
 }
+
 function setLongCookie(name, value='1', years = COOKIE_EXPIRY_YEARS) {
   try { const d = new Date(); d.setFullYear(d.getFullYear() + years); document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; Expires=${d.toUTCString()}; Path=/; SameSite=Lax; Secure`; } catch (e) {}
 }
+
 function trimItems(rawItems) {
   return (rawItems || []).map(it => {
     const out = {};
@@ -166,7 +171,7 @@ async function progressiveSearch() {
   let nextPageToken = '';
   allFetchedItems = [];
   playlistTotal = null;
-  updateStatus('Searching playlist…');
+  updateStatus('Searching playlist...');
 
   try {
     do {
@@ -175,14 +180,13 @@ async function progressiveSearch() {
       const itemsInChunk = [];
       let currentResult;
       
-      // Fetch pages in a rapid burst
       for (let i = 0; i < FETCH_CHUNK_SIZE; i++) {
         currentResult = await fetchPlaylistPageClient(currentPlaylistUrl, nextPageToken);
         if (currentResult.items && currentResult.items.length) {
             itemsInChunk.push(...currentResult.items);
         }
         nextPageToken = currentResult.nextPageToken;
-        if (!nextPageToken) break; // Stop if we've reached the end of the playlist
+        if (!nextPageToken) break; 
       }
 
       if (currentResult.totalResults != null && playlistTotal === null) {
@@ -195,17 +199,12 @@ async function progressiveSearch() {
       
       applyFilterAndRender();
 
-      // Update status with current progress
       if (playlistTotal && Number.isFinite(playlistTotal)) {
         updateStatus(`Searching ${allFetchedItems.length} of ${playlistTotal} videos`);
       } else {
         updateStatus(`Searching ${allFetchedItems.length} videos`);
       }
-      
-      // The polite delay has been removed from here to maximize speed.
-
     } while (nextPageToken);
-
     updateStatus(`Done — searched ${allFetchedItems.length} videos`);
   } catch (err) {
     console.error('progressiveSearch error:', err);
@@ -218,13 +217,12 @@ async function progressiveSearch() {
 if (form) {
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
-    isSearching = false; // Stop any previous search
+    isSearching = false;
     
     currentPlaylistUrl = document.getElementById('playlistUrl')?.value?.trim() || '';
     currentSearchTerm = document.getElementById('searchTerm')?.value?.trim() || '';
     if (!currentPlaylistUrl) { updateStatus('Please enter a playlist URL.', true); return; }
     
-    // Use a timeout to ensure the isSearching flag is processed by any ongoing async operations
     setTimeout(() => {
         isSearching = true;
         progressiveSearch();
