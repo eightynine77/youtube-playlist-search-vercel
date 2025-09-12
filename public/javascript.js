@@ -13,8 +13,11 @@ const DB_NAME = 'ytplCache';
 const DB_VER = 1;
 const STORE_PAGES = 'pages';
 const COOKIE_EXPIRY_YEARS = 10;
-const FETCH_CHUNK_SIZE = 4; 
-const TRIM_FIELDS = ['videoId','title','channelTitle','channelId','channelHandle','thumbnailUrl','videoUrl','description'];
+const FETCH_CHUNK_SIZE = 4;
+const TRIM_FIELDS = ['videoId', 'title', 'channelTitle', 'channelId', 'channelHandle', 'thumbnailUrl', 'videoUrl', 'description'];
+const COOKIE_PREFIX = 'ytpl_cached_';
+const RENEWAL_THRESHOLD_MS = 24 * 60 * 60 * 1000; 
+const RENEWAL_INTERVAL_MS = 6 * 60 * 60 * 1000;   
 
 function openDb() {
   return new Promise((resolve, reject) => {
@@ -66,6 +69,13 @@ function lsGet(key) {
 
 function lsSet(key, value) { try { localStorage.setItem(LS_PREFIX + key, JSON.stringify(value)); } catch (e) {} }
 
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+}
+
 function updateStatus(msg, isError = false) {
   if (!statusMessageEl) return;
   statusMessageEl.textContent = msg;
@@ -76,8 +86,13 @@ function extractPlaylistId(url) {
   try { if (!url) return null; const parsed = new URL(url); if (!parsed.hostname.includes('youtube.com')) return null; return parsed.searchParams.get('list'); } catch (e) { return null; }
 }
 
-function setLongCookie(name, value='1', years = COOKIE_EXPIRY_YEARS) {
-  try { const d = new Date(); d.setFullYear(d.getFullYear() + years); document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; Expires=${d.toUTCString()}; Path=/; SameSite=Lax; Secure`; } catch (e) {}
+function setLongCookie(name, value, years = COOKIE_EXPIRY_YEARS) {
+  const cookieData = JSON.stringify({ lastSet: Date.now(), value: value });
+  try {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() + years);
+    document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(cookieData)}; Expires=${d.toUTCString()}; Path=/; SameSite=Lax; Secure`;
+  } catch (e) {}
 }
 
 function trimItems(rawItems) {
@@ -121,12 +136,13 @@ async function fetchPlaylistPageClient(playlistUrl, pageToken = '') {
     lsSet(key, payload);
   }
 
-  try { setLongCookie(`ytpl_cached_${playlistId}`, '1', COOKIE_EXPIRY_YEARS); } catch (e) {}
+  setLongCookie(`${COOKIE_PREFIX}${playlistId}`, '1', COOKIE_EXPIRY_YEARS);
 
   return { items: trimmed, nextPageToken: json.nextPageToken || null, fromCache: false, totalResults: json.totalResults || null };
 }
 
 function clearResults() { if (!resultsContainer) return; resultsContainer.innerHTML = ''; }
+
 function renderResultsList(itemsToShow) {
   if (!resultsContainer) return;
   clearResults();
@@ -140,7 +156,7 @@ function renderResultsList(itemsToShow) {
     li.className = 'video-item';
 
     const thumbnailUrl = it.thumbnailUrl || '';
-    const title = (it.title || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const title = (it.title || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const videoUrl = it.videoUrl || '#';
     const channelId = it.channelId || '';
     const channelTitle = it.channelTitle || '';
@@ -161,10 +177,10 @@ function renderResultsList(itemsToShow) {
 }
 
 function applyFilterAndRender() {
-    const wholeWordOnly = !!document.getElementById('wholeWordMatch')?.checked;
-    const searchMode = document.querySelector('input[name="searchMode"]:checked')?.value || 'title';
-    const filtered = filterItems(allFetchedItems, currentSearchTerm, wholeWordOnly, searchMode);
-    renderResultsList(filtered);
+  const wholeWordOnly = !!document.getElementById('wholeWordMatch')?.checked;
+  const searchMode = document.querySelector('input[name="searchMode"]:checked')?.value || 'title';
+  const filtered = filterItems(allFetchedItems, currentSearchTerm, wholeWordOnly, searchMode);
+  renderResultsList(filtered);
 }
 
 async function progressiveSearch() {
@@ -176,27 +192,27 @@ async function progressiveSearch() {
   try {
     do {
       if (!isSearching) { updateStatus(''); return; }
-      
+
       const itemsInChunk = [];
       let currentResult;
-      
+
       for (let i = 0; i < FETCH_CHUNK_SIZE; i++) {
         currentResult = await fetchPlaylistPageClient(currentPlaylistUrl, nextPageToken);
         if (currentResult.items && currentResult.items.length) {
-            itemsInChunk.push(...currentResult.items);
+          itemsInChunk.push(...currentResult.items);
         }
         nextPageToken = currentResult.nextPageToken;
-        if (!nextPageToken) break; 
+        if (!nextPageToken) break;
       }
 
       if (currentResult.totalResults != null && playlistTotal === null) {
         playlistTotal = Number(currentResult.totalResults) || null;
       }
-      
+
       if (itemsInChunk.length) {
-          allFetchedItems.push(...itemsInChunk);
+        allFetchedItems.push(...itemsInChunk);
       }
-      
+
       applyFilterAndRender();
 
       if (playlistTotal && Number.isFinite(playlistTotal)) {
@@ -218,16 +234,42 @@ if (form) {
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     isSearching = false;
-    
+
     currentPlaylistUrl = document.getElementById('playlistUrl')?.value?.trim() || '';
     currentSearchTerm = document.getElementById('searchTerm')?.value?.trim() || '';
     if (!currentPlaylistUrl) { updateStatus('Please enter a playlist URL.', true); return; }
-    
+
     setTimeout(() => {
-        isSearching = true;
-        progressiveSearch();
+      isSearching = true;
+      progressiveSearch();
     }, 0);
   });
 }
 
 if (!resultsContainer) console.warn('No #results element found. UI may not render.');
+
+function checkAndRenewCookies() {
+  const allCookies = document.cookie.split(';');
+  for (const cookie of allCookies) {
+    const name = cookie.trim().split('=')[0];
+    if (name.startsWith(COOKIE_PREFIX)) {
+      try {
+        const cookieValue = getCookie(name);
+        if (cookieValue) {
+          const data = JSON.parse(decodeURIComponent(cookieValue));
+          const timeSinceLastSet = Date.now() - data.lastSet;
+          
+          if (timeSinceLastSet > RENEWAL_THRESHOLD_MS) {
+            console.log(`Renewing stale cookie: ${name}`);
+            setLongCookie(name, data.value, COOKIE_EXPIRY_YEARS);
+          }
+        }
+      } catch (e) {
+        console.error(`Could not parse or renew cookie ${name}`, e);
+      }
+    }
+  }
+}
+
+checkAndRenewCookies(); 
+setInterval(checkAndRenewCookies, RENEWAL_INTERVAL_MS); 
