@@ -152,7 +152,7 @@ async function fetchFullPlaylist() {
     }
 
     updateStatus(`Fetching from ${invidiousInstance}...`);
-    const url = `/api/invidiousPlaylistAPI?playlistUrl=${encodeURIComponent(currentPlaylistUrl)}&invidiousInstance=${encodeURIComponent(invidiousInstance)}`;
+    const url = `/api/invidiousAPI?playlistUrl=${encodeURIComponent(currentPlaylistUrl)}&invidiousInstance=${encodeURIComponent(invidiousInstance)}`;
     
     const resp = await fetch(url);
     const json = await resp.json();
