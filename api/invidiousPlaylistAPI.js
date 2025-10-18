@@ -19,10 +19,10 @@ function transformInvidiousVideos(videos = []) {
       title: video.title,
       channelTitle: video.author,
       channelId: video.authorId,
-      description: '', // Description is not provided by this Invidious endpoint
-      thumbnailUrl: thumbnail?.url ? `https://<INSTANCE_DOMAIN>${thumbnail.url}` : '', // Note: Invidious thumbnails are relative paths
+      description: '', 
+      thumbnailUrl: thumbnail?.url ? `https://<INSTANCE_DOMAIN>${thumbnail.url}` : '', 
       videoUrl: `https://www.youtube.com/watch?v=${video.videoId}`,
-      channelHandle: null // Not provided by Invidious
+      channelHandle: null 
     };
   });
 }
@@ -37,7 +37,7 @@ export default async function handler(request, response) {
 
   const { searchParams } = new URL(request.url, `http://${request.headers.host}`);
   const playlistUrl = searchParams.get('playlistUrl');
-  let invidiousInstance = searchParams.get('invidiousInstance'); // e.g., "yewtu.be"
+  let invidiousInstance = searchParams.get('invidiousInstance'); 
 
   if (!playlistUrl) {
     return response.status(400).json({ error: "Missing 'playlistUrl' query parameter." });
