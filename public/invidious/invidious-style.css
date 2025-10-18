@@ -18,6 +18,25 @@ h1 {
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
 
+.instance-selector {
+  background: #fdfdfd;
+  border: 1px solid #eee;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+.instance-selector label {
+  margin-top: 10px;
+}
+.instance-selector select,
+.instance-selector input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  box-sizing: border-box;
+  font-size: 1em;
+  margin-top: 5px;
+}
+
 form {
   margin-bottom: 20px;
 }

@@ -4,33 +4,52 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>youtube playlist video search - search with invidious</title>
-    <link rel="stylesheet" href="../invidious-style.css">
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="./invidious.css">
     <link rel="icon" type="image/x-icon" href="/icon.ico">
 </head>
 <body>
     <div class="container">
     <h1>search with invidious</h1>
+
+        <div class="instance-selector">
+            <label for="instanceSelect">Select an Invidious Instance:</label>
+            <select id="instanceSelect">
+                <option value="yewtu.be">yewtu.be</option>
+                <option value="vid.puffyan.us">vid.puffyan.us</option>
+                <option value="invidious.io.lol">invidious.io.lol</option>
+                <option value="inv.nadeko.net">inv.nadeko.net</option>
+                <option value="invidious.projectsegfau.lt">invidious.projectsegfau.lt</option>
+            </select>
+            <label for="instanceInput">Or enter manually (e.g., invidious.xyz):</label>
+            <input type="text" id="instanceInput" placeholder="invidious.xyz">
+        </div>
+
         <form id="searchForm">
             <label for="playlistUrl">YouTube Playlist Link:</label>
             <input type="text" id="playlistUrl" placeholder="Paste playlist URL (e.g., https://www.youtube.com/playlist?list=...)" required>
+            
             <label for="searchTerm">Search Term:</label>
-            <input type="text" id="searchTerm" placeholder="Search videos by title">
+            <input type="text" id="searchTerm" placeholder="Search videos">
+            
             <div class="checkbox-group">
                 <input type="checkbox" id="wholeWordMatch">
                 <label for="wholeWordMatch">Match whole word</label>
             </div>
+
             <div class="search-mode-group">
-              <p style="font-size: 22px;">Search video description</p>
-              <label><input type="radio" name="searchMode" value="title" checked> Search video title only (default)</label>
-              <label><input type="radio" name="searchMode" value="both"> search video description and title</label>
-              <label><input type="radio" name="searchMode" value="description"> Search video description only</label>
-              <label><input type="radio" name="searchMode" value="channel"> Search by channel name only</label>
-          </div>
+                <p style="font-size: 22px;">Search by</p>
+                <label><input type="radio" name="searchMode" value="title" checked> Title (default)</label>
+                <label><input type="radio" name="searchMode" value="channel"> Channel Name</label>
+            </div>
+
             <button type="submit">Search</button>
         </form>
         
         <p id="statusMessage"></p>
         <ul id="results" class="video-list"></ul>
-  </div>
+    </div>
+
+    <script src="../invidious.js" type="module"></script>
 </body>
 </html>
