@@ -74,7 +74,7 @@ function getSelectedInstance() {
 }
 
 async function fetchPlaylistPageClient(playlistUrl, invidiousInstance, page) {
-    const url = `/api/fetchInvidious?playlistUrl=${encodeURIComponent(playlistUrl)}&invidiousInstance=${encodeURIComponent(invidiousInstance)}&page=${page}`;
+    const url = `/api/invidiousAPI?playlistUrl=${encodeURIComponent(playlistUrl)}&invidiousInstance=${encodeURIComponent(invidiousInstance)}&page=${page}`;
     
     const resp = await fetch(url);
     const json = await resp.json();
