@@ -1,8 +1,8 @@
 import { filterItems } from '/searchFilter.js';
 
 let allFetchedItems = [];
-let currentSearchTerm = '';
-let currentPlaylistUrl = '';
+let currentSearchTerm = ''; 
+let currentPlaylistUrl = ''; 
 let isSearching = false;
 
 const resultsContainer = document.getElementById('results');
@@ -57,6 +57,10 @@ function renderResultsList(itemsToShow) {
   });
 }
 
+/**
+ * This function now reads filter options directly from the DOM,
+ * using the global 'currentSearchTerm' set by the button click.
+ */
 function applyFilterAndRender() {
   const wholeWordOnly = !!document.getElementById('wholeWordMatch')?.checked;
   const searchMode = document.querySelector('input[name="searchMode"]:checked')?.value || 'title';
@@ -87,17 +91,11 @@ async function fetchPlaylistPageClient(playlistUrl, invidiousInstance, page) {
 }
 
 async function progressiveSearch() {
-  if (isSearching) {
-    isSearching = false;
-    updateStatus('Stopping search...');
-    searchButton.textContent = 'Search';
-    return;
-  }
-
   isSearching = true;
   allFetchedItems = [];
   let currentPage = 1; 
-  searchButton.textContent = 'Stop';
+  searchButton.disabled = true; 
+  searchButton.textContent = 'Searching...';
   
   const playlistId = extractPlaylistId(currentPlaylistUrl);
   const invidiousInstance = getSelectedInstance();
@@ -105,12 +103,14 @@ async function progressiveSearch() {
   if (!playlistId) {
     updateStatus('Invalid playlist URL', true);
     isSearching = false;
+    searchButton.disabled = false;
     searchButton.textContent = 'Search';
     return;
   }
   if (!invidiousInstance) {
     updateStatus('Please select or enter an Invidious instance', true);
     isSearching = false;
+    searchButton.disabled = false;
     searchButton.textContent = 'Search';
     return;
   }
@@ -118,7 +118,7 @@ async function progressiveSearch() {
   updateStatus('Searching playlist...');
 
   try {
-    while (isSearching && currentPage !== null) {
+    while (currentPage !== null) {
       
       const result = await fetchPlaylistPageClient(currentPlaylistUrl, invidiousInstance, currentPage);
 
@@ -126,23 +126,20 @@ async function progressiveSearch() {
         allFetchedItems.push(...result.items);
       }
 
-      applyFilterAndRender();
+      applyFilterAndRender(); 
       updateStatus(`Searching ${allFetchedItems.length} videos...`);
       
       currentPage = result.nextPage;
     }
 
-    if (isSearching) {
-      updateStatus(`Done — searched ${allFetchedItems.length} videos`);
-    } else {
-      updateStatus(`Search stopped at ${allFetchedItems.length} videos.`);
-    }
+    updateStatus(`Done — searched ${allFetchedItems.length} videos`);
 
   } catch (err) {
     console.error('progressiveSearch error:', err);
     updateStatus('An error occurred: ' + (err.message || err), true);
   } finally {
     isSearching = false; 
+    searchButton.disabled = false; 
     searchButton.textContent = 'Search'; 
   }
 }
@@ -152,33 +149,20 @@ if (form) {
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     
-    if (!isSearching) {
-      currentPlaylistUrl = document.getElementById('playlistUrl')?.value?.trim() || '';
-      currentSearchTerm = document.getElementById('searchTerm')?.value?.trim() || '';
-      
-      if (!currentPlaylistUrl) {
-        updateStatus('Please enter a playlist URL.', true);
-        return;
-      }
-      clearResults();
+    if (isSearching) {
+      return; 
     }
     
-    progressiveSearch();
-  });
-  
-  document.getElementById('searchTerm')?.addEventListener('input', () => {
-    currentSearchTerm = document.getElementById('searchTerm').value.trim();
-    if (!isSearching) applyFilterAndRender();
-  });
-  
-  document.getElementById('wholeWordMatch')?.addEventListener('change', () => {
-    if (!isSearching) applyFilterAndRender();
-  });
+    currentPlaylistUrl = document.getElementById('playlistUrl')?.value?.trim() || '';
+    currentSearchTerm = document.getElementById('searchTerm')?.value?.trim() || '';
+    
+    if (!currentPlaylistUrl) {
+      updateStatus('Please enter a playlist URL.', true);
+      return;
+    }
 
-  document.querySelectorAll('input[name="searchMode"]')?.forEach(radio => {
-    radio.addEventListener('change', () => {
-      if (!isSearching) applyFilterAndRender();
-    });
+    clearResults();
+    progressiveSearch(); 
   });
 }
 
