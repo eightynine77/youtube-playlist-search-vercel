@@ -10,25 +10,25 @@
 </head>
 <body>
   <div class="container">
-    <a href="/invidious/index.html"><b>search with invidious</b></a>
+    <a href="/invidious/index.html" tabindex="9"><b>search with invidious</b></a>
     <h1>youtube playlist video search</h1>
         <form id="searchForm">
             <label for="playlistUrl">YouTube Playlist Link:</label>
-            <input type="text" id="playlistUrl" placeholder="Paste playlist URL (e.g., https://www.youtube.com/playlist?list=...)" required>
+            <input type="text" id="playlistUrl" placeholder="Paste playlist URL (e.g., https://www.youtube.com/playlist?list=...)" required autofocus tabindex="1">
             <label for="searchTerm">Search Term:</label>
-            <input type="text" id="searchTerm" placeholder="Search videos by title">
+            <input type="text" id="searchTerm" placeholder="Search videos by title" tabindex="2">
             <div class="checkbox-group">
-                <input type="checkbox" id="wholeWordMatch">
+                <input type="checkbox" id="wholeWordMatch" tabindex="3">
                 <label for="wholeWordMatch">Match whole word</label>
             </div>
             <div class="search-mode-group">
               <p style="font-size: 22px;">Search video description</p>
-              <label><input type="radio" name="searchMode" value="title" checked> Search video title only (default)</label>
-              <label><input type="radio" name="searchMode" value="both"> search video description and title</label>
-              <label><input type="radio" name="searchMode" value="description"> Search video description only</label>
-              <label><input type="radio" name="searchMode" value="channel"> Search by channel name only</label>
+              <label><input type="radio" name="searchMode" value="title" checked tabindex="4"> Search video title only (default)</label>
+              <label><input type="radio" name="searchMode" value="both" tabindex="5"> search video description and title</label>
+              <label><input type="radio" name="searchMode" value="description" tabindex="6"> Search video description only</label>
+              <label><input type="radio" name="searchMode" value="channel" tabindex="7"> Search by channel name only</label>
           </div>
-            <button type="submit">Search</button>
+            <button type="submit" tabindex="8">Search</button>
         </form>
         
         <p id="statusMessage"></p>
