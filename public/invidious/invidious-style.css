@@ -25,9 +25,11 @@ h1 {
   border-radius: 8px;
   margin-bottom: 20px;
 }
+
 .instance-selector label {
   margin-top: 10px;
 }
+
 .instance-selector select,
 .instance-selector input[type="text"] {
   width: 100%;
