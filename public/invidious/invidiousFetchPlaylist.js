@@ -1,4 +1,4 @@
-import { filterItems } from '/searchFilter.js';
+import { filterItems } from '/invidious/searchFilter.js';
 
 let allFetchedItems = [];
 let currentSearchTerm = '';
@@ -10,53 +10,6 @@ const statusMessageEl = document.getElementById('statusMessage');
 const form = document.getElementById('searchForm');
 const instanceSelect = document.getElementById('instanceSelect');
 const instanceInput = document.getElementById('instanceInput');
-
-const DB_NAME = 'ytplCache';
-const DB_VER = 1;
-const STORE_PAGES = 'pages';
-
-function openDb() {
-  return new Promise((resolve, reject) => {
-    if (!('indexedDB' in window)) return reject(new Error('IndexedDB not supported'));
-    const req = indexedDB.open(DB_NAME, DB_VER);
-    req.onupgradeneeded = (ev) => {
-      const db = ev.target.result;
-      if (!db.objectStoreNames.contains(STORE_PAGES)) {
-        const os = db.createObjectStore(STORE_PAGES, { keyPath: 'key' });
-        os.createIndex('byCreated', 'createdAt', { unique: false });
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error || new Error('IndexedDB open failed'));
-  });
-}
-
-async function idbGet(key) {
-  try {
-    const db = await openDb();
-    return await new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_PAGES, 'readonly');
-      const store = tx.objectStore(STORE_PAGES);
-      const r = store.get(key);
-      r.onsuccess = () => resolve(r.result ? r.result.value : null);
-      r.onerror = () => reject(r.error || new Error('idb get failed'));
-    });
-  } catch (e) { return null; }
-}
-
-async function idbSet(key, value) {
-  try {
-    const db = await openDb();
-    return await new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_PAGES, 'readwrite');
-      const store = tx.objectStore(STORE_PAGES);
-      const payload = { key, value, createdAt: Date.now() };
-      const r = store.put(payload);
-      r.onsuccess = () => resolve();
-      r.onerror = () => reject(r.error || new Error('idb put failed'));
-    });
-  } catch (e) {}
-}
 
 function updateStatus(msg, isError = false) {
   if (!statusMessageEl) return;
@@ -139,20 +92,10 @@ async function fetchFullPlaylist() {
     return;
   }
 
-  const cacheKey = `invidious:${playlistId}`;
-
   try {
-    const cachedData = await idbGet(cacheKey);
-    if (cachedData) {
-      allFetchedItems = cachedData.items;
-      updateStatus(`Done (from cache) — ${allFetchedItems.length} videos`);
-      applyFilterAndRender();
-      isSearching = false;
-      return;
-    }
-
-    updateStatus(`Fetching from ${invidiousInstance}...`);
-    const url = `/api/invidiousAPI?playlistUrl=${encodeURIComponent(currentPlaylistUrl)}&invidiousInstance=${encodeURIComponent(invidiousInstance)}`;
+    updateStatus(`Fetching all videos from ${invidiousInstance}... (this may take a moment for large playlists)`);
+    
+    const url = `/api/fetchInvidious?playlistUrl=${encodeURIComponent(currentPlaylistUrl)}&invidiousInstance=${encodeURIComponent(invidiousInstance)}`;
     
     const resp = await fetch(url);
     const json = await resp.json();
@@ -163,9 +106,6 @@ async function fetchFullPlaylist() {
 
     allFetchedItems = json.items || [];
     
-    const payload = { items: allFetchedItems, totalResults: allFetchedItems.length };
-    await idbSet(cacheKey, payload);
-
     updateStatus(`Done — searched ${allFetchedItems.length} videos`);
     applyFilterAndRender();
 
