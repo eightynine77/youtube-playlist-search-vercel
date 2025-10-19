@@ -1,4 +1,4 @@
-import { filterItems } from '/invidious/searchFilter.js';
+import { filterItems } from '/searchFilter.js';
 
 let allFetchedItems = [];
 let currentSearchTerm = '';
@@ -95,7 +95,7 @@ async function fetchFullPlaylist() {
   try {
     updateStatus(`Fetching all videos from ${invidiousInstance}... (this may take a moment for large playlists)`);
     
-    const url = `/api/fetchInvidious?playlistUrl=${encodeURIComponent(currentPlaylistUrl)}&invidiousInstance=${encodeURIComponent(invidiousInstance)}`;
+    const url = `/api/invidiousAPI?playlistUrl=${encodeURIComponent(currentPlaylistUrl)}&invidiousInstance=${encodeURIComponent(invidiousInstance)}`;
     
     const resp = await fetch(url);
     const json = await resp.json();
