@@ -13,7 +13,6 @@ function extractPlaylistId(url) {
 function transformInvidiousVideos(videos = [], instanceDomain) {
   return videos.map(video => {
     const thumbnail = video.videoThumbnails?.find(t => t.quality === 'medium') || video.videoThumbnails?.[0];
-
     return {
       videoId: video.videoId,
       title: video.title,
@@ -22,7 +21,7 @@ function transformInvidiousVideos(videos = [], instanceDomain) {
       description: '', 
       thumbnailUrl: thumbnail?.url ? `https://${instanceDomain}${thumbnail.url}` : '',
       videoUrl: `https://www.youtube.com/watch?v=${video.videoId}`,
-      channelHandle: null 
+      channelHandle: null
     };
   });
 }
@@ -38,16 +37,15 @@ export default async function handler(request, response) {
   const { searchParams } = new URL(request.url, `http://${request.headers.host}`);
   const playlistUrl = searchParams.get('playlistUrl');
   let invidiousInstance = searchParams.get('invidiousInstance');
+  
+  const page = parseInt(searchParams.get('page') || '1', 10);
 
-  if (!playlistUrl) {
-    return response.status(400).json({ error: "Missing 'playlistUrl' query parameter." });
-  }
-  if (!invidiousInstance) {
-    return response.status(400).json({ error: "Missing 'invidiousInstance' query parameter." });
+  if (!playlistUrl || !invidiousInstance) {
+    return response.status(400).json({ error: "Missing required parameters." });
   }
 
   try {
-    const url = new URL(invidiousInstance.startsWith('http') ? invidiousInstance : `https://invidiousInstance`);
+    const url = new URL(invidiousInstance.startsWith('http') ? invidiousInstance : `https://${invidiousInstance}`);
     invidiousInstance = url.hostname;
   } catch (e) {
     return response.status(400).json({ error: "Invalid Invidious instance URL." });
@@ -58,42 +56,34 @@ export default async function handler(request, response) {
     return response.status(400).json({ error: "Invalid YouTube playlist URL." });
   }
 
-  let allItems = [];
-  let currentPage = 1;
-  let continueFetching = true;
+  let itemsOnThisPage = [];
+  let nextPage = null;
 
   try {
-    while (continueFetching) {
-      const apiUrl = `https://${invidiousInstance}/api/v1/playlists/${encodeURIComponent(playlistId)}?page=${currentPage}`;
+    const apiUrl = `https://${invidiousInstance}/api/v1/playlists/${encodeURIComponent(playlistId)}?page=${page}`;
 
-      const invidiousResponse = await fetch(apiUrl, {
-        headers: { 'Accept': 'application/json' }
-      });
+    const invidiousResponse = await fetch(apiUrl, {
+      headers: { 'Accept': 'application/json' }
+    });
 
-      if (!invidiousResponse.ok) {
-        if (currentPage === 1) {
-            throw new Error(`Invidious instance returned ${invidiousResponse.status}. It might be down or the playlist is private.`);
-        } else {
-            continueFetching = false;
-            break;
-        }
-      }
+    if (invidiousResponse.status === 404) {
+      return response.status(200).json({ items: [], nextPage: null });
+    }
 
-      const data = await invidiousResponse.json();
-      
-      if (data && Array.isArray(data.videos) && data.videos.length > 0) {
-        const transformedVideos = transformInvidiousVideos(data.videos, invidiousInstance);
-        allItems.push(...transformedVideos);
-        currentPage++;
-      } else {
-        continueFetching = false;
-      }
+    if (!invidiousResponse.ok) {
+        throw new Error(`Invidious instance returned ${invidiousResponse.status}`);
+    }
+
+    const data = await invidiousResponse.json();
+    
+    if (data && Array.isArray(data.videos) && data.videos.length > 0) {
+      itemsOnThisPage = transformInvidiousVideos(data.videos, invidiousInstance);
+      nextPage = page + 1;
     }
 
     return response.status(200).json({
-      items: allItems,
-      nextPageToken: null, 
-      totalResults: allItems.length
+      items: itemsOnThisPage,
+      nextPage: nextPage 
     });
 
   } catch (error) {

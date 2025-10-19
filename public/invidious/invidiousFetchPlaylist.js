@@ -8,6 +8,7 @@ let isSearching = false;
 const resultsContainer = document.getElementById('results');
 const statusMessageEl = document.getElementById('statusMessage');
 const form = document.getElementById('searchForm');
+const searchButton = form.querySelector('button'); 
 const instanceSelect = document.getElementById('instanceSelect');
 const instanceInput = document.getElementById('instanceInput');
 
@@ -72,48 +73,77 @@ function getSelectedInstance() {
     return instanceSelect?.value;
 }
 
-async function fetchFullPlaylist() {
-  if (isSearching) return;
-  isSearching = true;
-  allFetchedItems = [];
-  updateStatus('Searching playlist...');
-
-  const playlistId = extractPlaylistId(currentPlaylistUrl);
-  if (!playlistId) {
-    updateStatus('Invalid playlist URL', true);
-    isSearching = false;
-    return;
-  }
-
-  const invidiousInstance = getSelectedInstance();
-  if (!invidiousInstance) {
-    updateStatus('Please select or enter an Invidious instance', true);
-    isSearching = false;
-    return;
-  }
-
-  try {
-    updateStatus(`Fetching all videos from ${invidiousInstance}... (this may take a moment for large playlists)`);
-    
-    const url = `/api/invidiousAPI?playlistUrl=${encodeURIComponent(currentPlaylistUrl)}&invidiousInstance=${encodeURIComponent(invidiousInstance)}`;
+async function fetchPlaylistPageClient(playlistUrl, invidiousInstance, page) {
+    const url = `/api/fetchInvidious?playlistUrl=${encodeURIComponent(playlistUrl)}&invidiousInstance=${encodeURIComponent(invidiousInstance)}&page=${page}`;
     
     const resp = await fetch(url);
     const json = await resp.json();
 
     if (!resp.ok) {
-      throw new Error(json.error || `Server returned ${resp.status}`);
+        throw new Error(json.error || `Server returned ${resp.status}`);
+    }
+    
+    return json;
+}
+
+async function progressiveSearch() {
+  if (isSearching) {
+    isSearching = false;
+    updateStatus('Stopping search...');
+    searchButton.textContent = 'Search';
+    return;
+  }
+
+  isSearching = true;
+  allFetchedItems = [];
+  let currentPage = 1; 
+  searchButton.textContent = 'Stop';
+  
+  const playlistId = extractPlaylistId(currentPlaylistUrl);
+  const invidiousInstance = getSelectedInstance();
+
+  if (!playlistId) {
+    updateStatus('Invalid playlist URL', true);
+    isSearching = false;
+    searchButton.textContent = 'Search';
+    return;
+  }
+  if (!invidiousInstance) {
+    updateStatus('Please select or enter an Invidious instance', true);
+    isSearching = false;
+    searchButton.textContent = 'Search';
+    return;
+  }
+  
+  updateStatus('Searching playlist...');
+
+  try {
+    while (isSearching && currentPage !== null) {
+      
+      const result = await fetchPlaylistPageClient(currentPlaylistUrl, invidiousInstance, currentPage);
+
+      if (result.items && result.items.length > 0) {
+        allFetchedItems.push(...result.items);
+      }
+
+      applyFilterAndRender();
+      updateStatus(`Searching ${allFetchedItems.length} videos...`);
+      
+      currentPage = result.nextPage;
     }
 
-    allFetchedItems = json.items || [];
-    
-    updateStatus(`Done — searched ${allFetchedItems.length} videos`);
-    applyFilterAndRender();
+    if (isSearching) {
+      updateStatus(`Done — searched ${allFetchedItems.length} videos`);
+    } else {
+      updateStatus(`Search stopped at ${allFetchedItems.length} videos.`);
+    }
 
   } catch (err) {
-    console.error('fetchFullPlaylist error:', err);
+    console.error('progressiveSearch error:', err);
     updateStatus('An error occurred: ' + (err.message || err), true);
   } finally {
-    isSearching = false;
+    isSearching = false; 
+    searchButton.textContent = 'Search'; 
   }
 }
 
@@ -122,16 +152,18 @@ if (form) {
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     
-    currentPlaylistUrl = document.getElementById('playlistUrl')?.value?.trim() || '';
-    currentSearchTerm = document.getElementById('searchTerm')?.value?.trim() || '';
-    
-    if (!currentPlaylistUrl) {
-      updateStatus('Please enter a playlist URL.', true);
-      return;
+    if (!isSearching) {
+      currentPlaylistUrl = document.getElementById('playlistUrl')?.value?.trim() || '';
+      currentSearchTerm = document.getElementById('searchTerm')?.value?.trim() || '';
+      
+      if (!currentPlaylistUrl) {
+        updateStatus('Please enter a playlist URL.', true);
+        return;
+      }
+      clearResults();
     }
     
-    clearResults();
-    fetchFullPlaylist();
+    progressiveSearch();
   });
   
   document.getElementById('searchTerm')?.addEventListener('input', () => {
