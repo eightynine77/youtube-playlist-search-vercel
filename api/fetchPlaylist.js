@@ -80,7 +80,21 @@ export default async function handler(request, response) {
 
   const apiUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${encodeURIComponent(playlistId)}&maxResults=50&pageToken=${pageToken}&key=${API_KEY}`;
 
+  let playlistTitle = null;
+  let playlistChannelTitle = null;
+
   try {
+    if (!pageToken) {
+      const playlistApiUrl = `https://www.googleapis.com/youtube/v3/playlists?part=snippet&id=${encodeURIComponent(playlistId)}&key=${API_KEY}`;
+      const playlistResp = await fetch(playlistApiUrl);
+      const playlistData = await playlistResp.json();
+      
+      if (playlistData.items && playlistData.items.length > 0) {
+        playlistTitle = playlistData.items[0].snippet?.title;
+        playlistChannelTitle = playlistData.items[0].snippet?.channelTitle;
+      }
+    }
+
     const ytResponse = await fetch(apiUrl);
     const data = await ytResponse.json();
 
@@ -114,7 +128,9 @@ export default async function handler(request, response) {
     return response.status(200).json({
       items,
       nextPageToken: data.nextPageToken || null,
-      totalResults: data.pageInfo?.totalResults || null
+      totalResults: data.pageInfo?.totalResults || null,
+      playlistTitle: playlistTitle,
+      playlistChannelTitle: playlistChannelTitle
     });
 
   } catch (error) {

@@ -10,7 +10,8 @@ const resultsContainer = document.getElementById('results');
 const statusMessageEl = document.getElementById('statusMessage');
 const form = document.getElementById('searchForm');
 const DB_NAME = 'ytplCache';
-const DB_VER = 1;
+const DB_VER = 2;
+const STORE_PLAYLISTS = 'playlists';
 const STORE_PAGES = 'pages';
 const COOKIE_EXPIRY_YEARS = 10;
 const FETCH_CHUNK_SIZE = 4;
@@ -29,10 +30,53 @@ function openDb() {
         const os = db.createObjectStore(STORE_PAGES, { keyPath: 'key' });
         os.createIndex('byCreated', 'createdAt', { unique: false });
       }
+      if (!db.objectStoreNames.contains(STORE_PLAYLISTS)) {
+        const os = db.createObjectStore(STORE_PLAYLISTS, { keyPath: 'playlistId' });
+        os.createIndex('byCached', 'lastCached', { unique: false });
+      }
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error || new Error('IndexedDB open failed'));
   });
+}
+
+async function idbGetAll(storeName) {
+  try {
+    const db = await openDb();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, 'readonly');
+      const store = tx.objectStore(storeName);
+      const r = store.getAll();
+      r.onsuccess = () => resolve(r.result || []);
+      r.onerror = () => reject(r.error || new Error('idb getAll failed'));
+    });
+  } catch (e) { return []; }
+}
+
+async function idbDelete(storeName, key) {
+  try {
+    const db = await openDb();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, 'readwrite');
+      const store = tx.objectStore(storeName);
+      const r = store.delete(key);
+      r.onsuccess = () => resolve();
+      r.onerror = () => reject(r.error || new Error('idb delete failed'));
+    });
+  } catch (e) {}
+}
+
+async function idbDeleteRange(storeName, range) {
+  try {
+    const db = await openDb();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, 'readwrite');
+      const store = tx.objectStore(storeName);
+      const r = store.delete(range);
+      r.onsuccess = () => resolve();
+      r.onerror = () => reject(r.error || new Error('idb delete range failed'));
+    });
+  } catch (e) {}
 }
 
 async function idbGet(key) {
@@ -127,6 +171,16 @@ async function fetchPlaylistPageClient(playlistUrl, pageToken = '') {
   }
   const json = await resp.json();
 
+  if (json.playlistTitle && !pageToken) {
+    const meta = {
+      playlistId: playlistId,
+      playlistTitle: json.playlistTitle,
+      channelTitle: json.playlistChannelTitle,
+      lastCached: Date.now()
+    };
+    await idbSet(STORE_PLAYLISTS, meta); 
+  }
+
   const trimmed = trimItems(json.items || []);
   const payload = { items: trimmed, nextPageToken: json.nextPageToken || null, totalResults: json.totalResults || null };
 
@@ -139,6 +193,135 @@ async function fetchPlaylistPageClient(playlistUrl, pageToken = '') {
   setLongCookie(`${COOKIE_PREFIX}${playlistId}`, '1', COOKIE_EXPIRY_YEARS);
 
   return { items: trimmed, nextPageToken: json.nextPageToken || null, fromCache: false, totalResults: json.totalResults || null };
+}
+
+const modal = document.getElementById('cacheModal');
+const closeModalBtn = document.getElementById('closeModalBtn');
+const cachedListEl = document.getElementById('cachedPlaylistsList');
+
+async function populateCacheList() {
+  if (!cachedListEl) return;
+  const playlists = await idbGetAll(STORE_PLAYLISTS);
+  cachedListEl.innerHTML = ''; 
+
+  if (playlists.length === 0) {
+    cachedListEl.innerHTML = '<li class="empty-result">No playlists are cached.</li>';
+    return;
+  }
+
+  playlists.sort((a, b) => b.lastCached - a.lastCached); 
+
+  playlists.forEach(pl => {
+    const li = document.createElement('li');
+    li.className = 'cached-playlist-item';
+    li.innerHTML = `
+      <div class="cached-playlist-info">
+        <strong>${pl.playlistTitle || 'Unknown Title'}</strong>
+        <span>By: ${pl.channelTitle || 'Unknown Channel'} (ID: ${pl.playlistId})</span>
+      </div>
+      <button class="delete-cache-btn" data-playlist-id="${pl.playlistId}">Delete</button>
+    `;
+    cachedListEl.appendChild(li);
+  });
+}
+
+async function deletePlaylistCache(playlistId) {
+  if (!playlistId) return;
+
+  const range = IDBKeyRange.bound(playlistId + ':', playlistId + ':\uffff');
+  await idbDeleteRange(STORE_PAGES, range);
+
+  await idbDelete(STORE_PLAYLISTS, playlistId);
+
+  Object.keys(localStorage)
+    .filter(k => k.startsWith(LS_PREFIX + playlistId + ':'))
+    .forEach(k => localStorage.removeItem(k));
+
+  const cookieName = `${COOKIE_PREFIX}${playlistId}`;
+  document.cookie = `${cookieName}=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; SameSite=Lax; Secure`;
+
+  console.log(`Cache cleared for playlist: ${playlistId}`);
+  await populateCacheList(); 
+}
+
+async function clearAllCache() {
+  updateStatus('Clearing all local cache...');
+  try {
+    await new Promise((resolve, reject) => {
+      const req = indexedDB.deleteDatabase(DB_NAME);
+      req.onsuccess = () => resolve();
+      req.onerror = (e) => reject(req.error || new Error('IDB delete failed'));
+      req.onblocked = () => reject(new Error('Cache clear blocked. Close other tabs.'));
+    });
+    
+    Object.keys(localStorage)
+      .filter(k => k.startsWith(LS_PREFIX))
+      .forEach(k => localStorage.removeItem(k));
+
+    const allCookies = document.cookie.split(';');
+    for (const cookie of allCookies) {
+      const name = cookie.trim().split('=')[0];
+      if (name.startsWith(COOKIE_PREFIX)) {
+        document.cookie = `${name}=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; SameSite=Lax; Secure`;
+      }
+    }
+
+    allFetchedItems = [];
+    playlistTotal = null;
+    clearResults();
+    updateStatus('All cache cleared. Ready to search.');
+    console.log('All cache cleared.');
+
+    if (modal.style.display !== 'none') {
+      await populateCacheList(); 
+    }
+  } catch (err) {
+    console.error('All cache clear failed:', err);
+    updateStatus(`Cache clear failed: ${err.message}`, true);
+  }
+}
+
+const clearCacheLink = document.getElementById('clearCacheLink');
+if (clearCacheLink) {
+  clearCacheLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    populateCacheList();
+    modal.style.display = 'flex';
+  });
+}
+
+if (closeModalBtn) {
+  closeModalBtn.addEventListener('click', () => {
+    modal.style.display = 'none';
+  });
+}
+
+if (modal) {
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.style.display = 'none';
+    }
+  });
+}
+
+if (cachedListEl) {
+  cachedListEl.addEventListener('click', (e) => {
+    if (e.target.classList.contains('delete-cache-btn')) {
+      const playlistId = e.target.dataset.playlistId;
+      if (confirm(`Are you sure you want to clear the cache for playlist ${playlistId}?`)) {
+        deletePlaylistCache(playlistId);
+      }
+    }
+  });
+}
+
+const clearAllBtn = document.getElementById('clearAllCacheBtn');
+if (clearAllBtn) {
+  clearAllBtn.addEventListener('click', () => {
+    if (confirm('Are you sure you want to clear ALL cached playlist data? This cannot be undone.')) {
+      clearAllCache();
+    }
+  });
 }
 
 function clearResults() { if (!resultsContainer) return; resultsContainer.innerHTML = ''; }
