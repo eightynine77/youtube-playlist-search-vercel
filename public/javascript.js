@@ -4,10 +4,12 @@ let allFetchedItems = [];
 let currentSearchTerm = '';
 let currentPlaylistUrl = '';
 let isSearching = false;
+let dbPromise = null;
 let playlistTotal = null;
 
 const resultsContainer = document.getElementById('results');
 const statusMessageEl = document.getElementById('statusMessage');
+const modalStatusEl = document.querySelector('.modal-footer .cookies-message');
 const form = document.getElementById('searchForm');
 const DB_NAME = 'ytplCache';
 const DB_VER = 2;
@@ -139,6 +141,12 @@ function updateStatus(msg, isError = false) {
   statusMessageEl.className = isError ? 'status-error' : 'status-info';
 }
 
+function updateModalStatus(msg, isError = false) {
+  if (!modalStatusEl) return;
+  modalStatusEl.textContent = msg;
+  modalStatusEl.className = isError ? 'cookies-message modal-status-error' : 'cookies-message';
+}
+
 function extractPlaylistId(url) {
   try { if (!url) return null; const parsed = new URL(url); if (!parsed.hostname.includes('youtube.com')) return null; return parsed.searchParams.get('list'); } catch (e) { return null; }
 }
@@ -214,6 +222,7 @@ const cachedListEl = document.getElementById('cachedPlaylistsList');
 
 async function populateCacheList() {
   if (!cachedListEl) return;
+  updateModalStatus('');
   const playlists = await idbGetAll(STORE_PLAYLISTS);
   cachedListEl.innerHTML = ''; 
 
@@ -254,11 +263,12 @@ async function deletePlaylistCache(playlistId) {
   document.cookie = `${cookieName}=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; SameSite=Lax; Secure`;
 
   console.log(`Cache cleared for playlist: ${playlistId}`);
+  updateModalStatus(`Cleared cache for playlist: ${playlistId}`);
   await populateCacheList(); 
 }
 
 async function clearAllCache() {
-  updateStatus('Clearing all local cache...');
+  updateModalStatus('Clearing all local cache...');
   isSearching = false; 
 
   try {
@@ -319,7 +329,7 @@ async function clearAllCache() {
     allFetchedItems = [];
     playlistTotal = null;
     clearResults();
-    updateStatus('All cache cleared. Ready to search.');
+    updateModalStatus('All cache cleared');
     console.log('All cache cleared.');
 
     if (modal.style.display !== 'none') {
@@ -327,7 +337,7 @@ async function clearAllCache() {
     }
   } catch (err) {
     console.error('All cache clear failed:', err);
-    updateStatus(`Cache clear failed: ${err.message}`, true);
+    updateModalStatus(`Cache clear failed: ${err.message}`, true);
   }
 }
 
