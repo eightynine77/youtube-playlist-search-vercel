@@ -239,17 +239,12 @@ button:hover {
 
 .delete-cache-btn {
   padding: 8px 12px;
-  background-color: #f44336;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.9em;
   white-space: nowrap;
-}
-
-.delete-cache-btn:hover {
-  background-color: #d32f2f;
 }
 
 .modal-footer {
@@ -269,8 +264,11 @@ button:hover {
   cursor: pointer;
 }
 
-.clear-all-btn:hover {
-  background-color: #a31013;
+.cookies-message{
+  text-align: center;
+    padding: 15px 10px;
+    font-size: 1.3em;
+    font-style: italic;
 }
 
 @media (min-width: 600px) {
