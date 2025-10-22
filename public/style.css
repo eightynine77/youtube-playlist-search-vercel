@@ -176,9 +176,10 @@ button:hover {
   width: 90%;
   max-width: 600px;
   max-height: 80vh;
-  overflow-y: auto;
   position: relative;
   box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-close-btn {
@@ -187,11 +188,16 @@ button:hover {
   right: 15px;
   background: none;
   border: none;
-  font-size: 2.5em;
-  color: #888;
+  font-size: 1.8em;
+  color: #aaa;
   cursor: pointer;
   padding: 0;
   line-height: 1;
+  transition: color 0.2s;
+}
+
+.modal-close-btn:hover {
+  color: #333;
 }
 
 .modal-content h2 {
@@ -202,6 +208,9 @@ button:hover {
   list-style: none;
   padding: 0;
   margin-top: 20px;
+  overflow-y: auto;
+  flex-shrink: 1;
+  min-height: 50px; 
 }
 
 .cached-playlist-item {
@@ -216,12 +225,16 @@ button:hover {
 
 .cached-playlist-info {
   margin-right: 15px;
+  overflow: hidden; 
 }
 
 .cached-playlist-info strong {
   font-size: 1.1em;
   color: #333;
   display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cached-playlist-info span {
@@ -238,15 +251,28 @@ button:hover {
   cursor: pointer;
   font-size: 0.9em;
   white-space: nowrap;
+  transition: background-color 0.2s;
 }
+
 .delete-cache-btn:hover {
   background-color: #d32f2f;
 }
 
-.clear-all-btn {
-  width: auto;
-  background-color: #cc181e;
+.modal-footer {
   margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end; 
+}
+
+.clear-all-btn {
+  padding: 10px 15px; 
+  background-color: #cc181e;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 .clear-all-btn:hover {
   background-color: #a31013;
