@@ -259,12 +259,49 @@ async function deletePlaylistCache(playlistId) {
 
 async function clearAllCache() {
   updateStatus('Clearing all local cache...');
+  isSearching = false; 
+
   try {
+    if (dbPromise) {
+      console.log('Database connection found, requesting close...');
+      const db = await dbPromise;
+
+      await new Promise((resolve, reject) => {
+        db.onclose = () => {
+          console.log('Database connection confirmed closed.');
+          resolve();
+        };
+
+        db.onerror = (e) => {
+          console.error('Error while closing DB', e);
+          reject(new Error('Error during DB close'));
+        };
+
+        db.close();
+        dbPromise = null; 
+        console.log('Current tab DB close request sent.');
+      });
+
+    } else {
+      console.log('No DB connection was open, proceeding with delete.');
+    }
+
     await new Promise((resolve, reject) => {
       const req = indexedDB.deleteDatabase(DB_NAME);
-      req.onsuccess = () => resolve();
-      req.onerror = (e) => reject(req.error || new Error('IDB delete failed'));
-      req.onblocked = () => reject(new Error('Cache clear blocked. Close other tabs.'));
+      
+      req.onsuccess = () => {
+        console.log('Database successfully deleted.');
+        resolve();
+      };
+      
+      req.onerror = (e) => {
+        reject(req.error || new Error('IDB delete failed'));
+      };
+      
+      req.onblocked = () => {
+        console.error('Cache delete blocked by an external process.');
+        reject(new Error('Cache clear blocked. This may be a browser issue (like "Sleeping Tabs"). Please fully close all site tabs and try again.'));
+      };
     });
     
     Object.keys(localStorage)
