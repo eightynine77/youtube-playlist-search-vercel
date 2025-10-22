@@ -92,7 +92,7 @@ async function idbGet(key) {
   } catch (e) { return null; }
 }
 
-async function idbSet(key, value) {
+async function idbSetPage(key, value) {
   try {
     const db = await openDb();
     return await new Promise((resolve, reject) => {
@@ -102,6 +102,19 @@ async function idbSet(key, value) {
       const r = store.put(payload);
       r.onsuccess = () => resolve();
       r.onerror = () => reject(r.error || new Error('idb put failed'));
+    });
+  } catch (e) {}
+}
+
+async function idbSetPlaylist(meta) {
+  try {
+    const db = await openDb();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_PLAYLISTS, 'readwrite');
+      const store = tx.objectStore(STORE_PLAYLISTS);
+      const r = store.put(meta); 
+      r.onsuccess = () => resolve();
+      r.onerror = () => reject(r.error || new Error('idb put playlist failed'));
     });
   } catch (e) {}
 }
@@ -178,14 +191,14 @@ async function fetchPlaylistPageClient(playlistUrl, pageToken = '') {
       channelTitle: json.playlistChannelTitle,
       lastCached: Date.now()
     };
-    await idbSet(STORE_PLAYLISTS, meta); 
+    await idbSetPlaylist(meta); 
   }
 
   const trimmed = trimItems(json.items || []);
   const payload = { items: trimmed, nextPageToken: json.nextPageToken || null, totalResults: json.totalResults || null };
 
   if (idbAvailable) {
-    try { await idbSet(key, payload); } catch (e) { lsSet(key, payload); }
+    try { await idbSetPage(key, payload); } catch (e) { lsSet(key, payload); }
   } else {
     lsSet(key, payload);
   }
