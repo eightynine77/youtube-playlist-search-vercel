@@ -1,62 +1,36 @@
-export function normalizeText(s) {
-  if (!s && s !== '') return '';
-  return String(s).toLowerCase().trim();
+function checkMatch(text, term, wholeWord) {
+  if (text === null || text === undefined) {
+    return false;
+  }
+
+  if (wholeWord) {
+    const escapedTerm = term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const regex = new RegExp(`\\b${escapedTerm}\\b`, 'i');
+    return regex.test(text);
+  } else {
+    return text.toLowerCase().includes(term.toLowerCase());
+  }
 }
 
-export function normalizeHandle(h) {
-  if (!h && h !== '') return '';
-  let s = String(h).toLowerCase().trim();
-  if (s.startsWith('@')) s = s.slice(1);
-  return s;
-}
-
-export function filterItems(items = [], term = '', wholeWordOnly = false, mode = 'title') {
-  if (!Array.isArray(items)) return [];
-  term = (term || '').trim();
-  if (!term) return items.slice(); 
-
-  const tn = normalizeText(term);
-  const termWords = tn.split(/\s+/).filter(Boolean);
+export function filterItems(items, searchTerm, wholeWordOnly, searchMode) {
+  if (!searchTerm) {
+    return items;
+  }
 
   return items.filter(item => {
-    const title = normalizeText(item.title || '');
-    const chTitle = normalizeText(item.channelTitle || '');
-    const chHandle = normalizeHandle(item.channelHandle || item.channelId || '');
+    switch (searchMode) {
+      case 'title':
+        return checkMatch(item.title, searchTerm, wholeWordOnly);
+      case 'description':
+        return checkMatch(item.description, searchTerm, wholeWordOnly);
+      case 'both':
+        return checkMatch(item.title, searchTerm, wholeWordOnly) ||
+               checkMatch(item.description, searchTerm, wholeWordOnly);
+      case 'channel':
+        return checkMatch(item.channelTitle, searchTerm, wholeWordOnly);
 
-    if (mode === 'channel') {
-      const startsWithAt = term.trim().startsWith('@');
-      if (chHandle) {
-        const handleMatch = wholeWordOnly
-          ? termWords.some(w => normalizeHandle(w) === chHandle)
-          : termWords.some(w => chHandle.includes(normalizeHandle(w)));
-        if (handleMatch) return true;
-      }
-
-      if (chTitle) {
-        if (wholeWordOnly) {
-          const allWords = termWords.every(w => {
-            const re = new RegExp(`\\b${escapeRegExp(w)}\\b`, 'i');
-            return re.test(chTitle);
-          });
-          if (allWords) return true;
-        } else {
-          if (chTitle.includes(tn)) return true;
-        }
-      }
-      return false;
-    } else {
-      if (wholeWordOnly) {
-        return termWords.every(w => {
-          const re = new RegExp(`\\b${escapeRegExp(w)}\\b`, 'i');
-          return re.test(title);
-        });
-      } else {
-        return title.includes(tn);
-      }
+      default:
+        return checkMatch(item.title, searchTerm, wholeWordOnly);
     }
   });
-}
-
-function escapeRegExp(string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
