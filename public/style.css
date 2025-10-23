@@ -269,6 +269,7 @@ button:hover {
     padding: 15px 10px;
     font-size: 1.3em;
     font-style: italic;
+    color: #cc181e;
 }
 
 @media (min-width: 600px) {
