@@ -9,7 +9,7 @@ let playlistTotal = null;
 
 const resultsContainer = document.getElementById('results');
 const statusMessageEl = document.getElementById('statusMessage');
-const modalStatusEl = document.querySelector('.cookies-message');
+const modalStatusEl = document.querySelector('.modal-footer-2 .cookies-message');
 const form = document.getElementById('searchForm');
 const DB_NAME = 'ytplCache';
 const DB_VER = 2;
@@ -310,7 +310,7 @@ async function clearAllCache() {
       };
       
       req.onblocked = () => {
-
+        
       };
     });
     
