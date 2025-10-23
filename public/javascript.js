@@ -305,12 +305,12 @@ async function clearAllCache() {
       };
       
       req.onerror = (e) => {
+        console.error('IDB delete failed:', e);
         reject(req.error || new Error('IDB delete failed'));
       };
       
       req.onblocked = () => {
-        console.error('Cache delete blocked by an external process.');
-        reject(new Error('Cache clear blocked. This may be a browser issue (like "Sleeping Tabs"). Please fully close all site tabs and try again.'));
+        
       };
     });
     
