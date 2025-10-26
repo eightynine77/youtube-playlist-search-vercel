@@ -57,10 +57,6 @@ function renderResultsList(itemsToShow) {
   });
 }
 
-/**
- * This function now reads filter options directly from the DOM,
- * using the global 'currentSearchTerm' set by the button click.
- */
 function applyFilterAndRender() {
   const wholeWordOnly = !!document.getElementById('wholeWordMatch')?.checked;
   const searchMode = document.querySelector('input[name="searchMode"]:checked')?.value || 'title';
@@ -77,16 +73,48 @@ function getSelectedInstance() {
     return instanceSelect?.value;
 }
 
-async function fetchPlaylistPageClient(playlistUrl, invidiousInstance, continuation) {
-    const url = `/api/invidiousAPI?playlistUrl=${encodeURIComponent(playlistUrl)}&invidiousInstance=${encodeURIComponent(invidiousInstance)}&continuation=${encodeURIComponent(continuation || '')}`;
-    const resp = await fetch(url);
+function transformInvidiousVideos(videos = [], instanceDomain) {
+  return videos.map(video => {
+    const thumbnail = video.videoThumbnails?.find(t => t.quality === 'medium') || video.videoThumbnails?.[0];
+    return {
+      videoId: video.videoId,
+      title: video.title,
+      channelTitle: video.author,
+      channelId: video.authorId,
+      description: '', 
+      thumbnailUrl: thumbnail?.url ? `https://${instanceDomain}${thumbnail.url}` : '',
+      videoUrl: `https://www.youtube.com/watch?v=${video.videoId}`,
+      channelHandle: null
+    };
+  });
+}
+
+async function fetchPlaylistPageClient(playlistId, invidiousInstance, continuation) {
+    let apiUrl = `https://${invidiousInstance}/api/v1/playlists/${encodeURIComponent(playlistId)}`;
+    
+    if (continuation) {
+      apiUrl += `?continuation=${encodeURIComponent(continuation)}`;
+    }
+
+    const resp = await fetch(apiUrl, {
+        headers: { 'Accept': 'application/json' }
+    });
+    
     const json = await resp.json();
 
     if (!resp.ok) {
+        if (resp.status === 404) {
+          return { items: [], nextContinuation: null };
+        }
         throw new Error(json.error || `Server returned ${resp.status}`);
     }
-
-    return json;
+    
+    const items = transformInvidiousVideos(json.videos, invidiousInstance);
+    
+    return {
+      items: items,
+      nextContinuation: json.continuation || null
+    };
 }
 
 async function progressiveSearch() {
@@ -99,7 +127,17 @@ async function progressiveSearch() {
   searchButton.textContent = 'Searching...';
   
   const playlistId = extractPlaylistId(currentPlaylistUrl);
-  const invidiousInstance = getSelectedInstance();
+  let invidiousInstance; 
+
+  try {
+    invidiousInstance = new URL(getSelectedInstance().startsWith('http') ? getSelectedInstance() : `https://${getSelectedInstance()}`).hostname;
+  } catch (e) {
+    updateStatus('Invalid Invidious instance URL', true);
+    isSearching = false;
+    searchButton.disabled = false;
+    searchButton.textContent = 'Search';
+    return;
+  }
 
   if (!playlistId) {
     updateStatus('Invalid playlist URL', true);
@@ -120,7 +158,8 @@ async function progressiveSearch() {
 
   try {
     while (hasMore) {
-      const result = await fetchPlaylistPageClient(currentPlaylistUrl, invidiousInstance, currentContinuation);
+      
+      const result = await fetchPlaylistPageClient(playlistId, invidiousInstance, currentContinuation);
 
       if (result.items && result.items.length > 0) {
         allFetchedItems.push(...result.items);
@@ -130,7 +169,7 @@ async function progressiveSearch() {
       updateStatus(`Searching ${allFetchedItems.length} videos...`);
       
       if (result.nextContinuation) {
-        currentContinuation = result.nextContinuation; 
+        currentContinuation = result.nextContinuation;
       } else {
         hasMore = false; 
       }
@@ -147,6 +186,7 @@ async function progressiveSearch() {
     searchButton.textContent = 'Search';  
   }
 }
+
 
 if (form) {
   form.addEventListener('submit', async (ev) => {
