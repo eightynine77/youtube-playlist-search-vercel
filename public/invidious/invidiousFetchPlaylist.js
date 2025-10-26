@@ -77,24 +77,25 @@ function getSelectedInstance() {
     return instanceSelect?.value;
 }
 
-async function fetchPlaylistPageClient(playlistUrl, invidiousInstance, page) {
-    const url = `/api/invidiousAPI?playlistUrl=${encodeURIComponent(playlistUrl)}&invidiousInstance=${encodeURIComponent(invidiousInstance)}&page=${page}`;
-    
+async function fetchPlaylistPageClient(playlistUrl, invidiousInstance, continuation) {
+    const url = `/api/invidiousAPI?playlistUrl=${encodeURIComponent(playlistUrl)}&invidiousInstance=${encodeURIComponent(invidiousInstance)}&continuation=${encodeURIComponent(continuation || '')}`;
     const resp = await fetch(url);
     const json = await resp.json();
 
     if (!resp.ok) {
         throw new Error(json.error || `Server returned ${resp.status}`);
     }
-    
+
     return json;
 }
 
 async function progressiveSearch() {
   isSearching = true;
   allFetchedItems = [];
-  let currentPage = 1; 
-  searchButton.disabled = true; 
+  let currentContinuation = ''; 
+  let hasMore = true; 
+  
+  searchButton.disabled = true;  
   searchButton.textContent = 'Searching...';
   
   const playlistId = extractPlaylistId(currentPlaylistUrl);
@@ -118,18 +119,21 @@ async function progressiveSearch() {
   updateStatus('Searching playlist...');
 
   try {
-    while (currentPage !== null) {
-      
-      const result = await fetchPlaylistPageClient(currentPlaylistUrl, invidiousInstance, currentPage);
+    while (hasMore) {
+      const result = await fetchPlaylistPageClient(currentPlaylistUrl, invidiousInstance, currentContinuation);
 
       if (result.items && result.items.length > 0) {
         allFetchedItems.push(...result.items);
       }
 
-      applyFilterAndRender(); 
+      applyFilterAndRender();  
       updateStatus(`Searching ${allFetchedItems.length} videos...`);
       
-      currentPage = result.nextPage;
+      if (result.nextContinuation) {
+        currentContinuation = result.nextContinuation; 
+      } else {
+        hasMore = false; 
+      }
     }
 
     updateStatus(`Done — searched ${allFetchedItems.length} videos`);
@@ -138,12 +142,11 @@ async function progressiveSearch() {
     console.error('progressiveSearch error:', err);
     updateStatus('An error occurred: ' + (err.message || err), true);
   } finally {
-    isSearching = false; 
-    searchButton.disabled = false; 
-    searchButton.textContent = 'Search'; 
+    isSearching = false;  
+    searchButton.disabled = false;  
+    searchButton.textContent = 'Search';  
   }
 }
-
 
 if (form) {
   form.addEventListener('submit', async (ev) => {
