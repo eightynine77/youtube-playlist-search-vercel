@@ -57,10 +57,6 @@ function renderResultsList(itemsToShow) {
   });
 }
 
-/**
- * This function now reads filter options directly from the DOM,
- * using the global 'currentSearchTerm' set by the button click.
- */
 function applyFilterAndRender() {
   const wholeWordOnly = !!document.getElementById('wholeWordMatch')?.checked;
   const searchMode = document.querySelector('input[name="searchMode"]:checked')?.value || 'title';
@@ -93,8 +89,12 @@ async function fetchPlaylistPageClient(playlistUrl, invidiousInstance, page) {
 async function progressiveSearch() {
   isSearching = true;
   allFetchedItems = [];
-  let currentPage = 1; 
-  searchButton.disabled = true; 
+  
+  const CONCURRENT_REQUESTS = 4;
+  let currentPage = 1;
+  let hasMore = true;
+
+  searchButton.disabled = true;  
   searchButton.textContent = 'Searching...';
   
   const playlistId = extractPlaylistId(currentPlaylistUrl);
@@ -118,18 +118,47 @@ async function progressiveSearch() {
   updateStatus('Searching playlist...');
 
   try {
-    while (currentPage !== null) {
+    while (hasMore) {
       
-      const result = await fetchPlaylistPageClient(currentPlaylistUrl, invidiousInstance, currentPage);
-
-      if (result.items && result.items.length > 0) {
-        allFetchedItems.push(...result.items);
+      const pageNumbersToFetch = [];
+      for (let i = 0; i < CONCURRENT_REQUESTS; i++) {
+        pageNumbersToFetch.push(currentPage + i);
       }
 
-      applyFilterAndRender(); 
+      const fetchPromises = pageNumbersToFetch.map(page => 
+        fetchPlaylistPageClient(currentPlaylistUrl, invidiousInstance, page)
+      );
+
+      const results = await Promise.allSettled(fetchPromises);
+      
+      let itemsFoundInThisBatch = 0;
+
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          const pageData = result.value;
+          
+          if (pageData.items && pageData.items.length > 0) {
+            allFetchedItems.push(...pageData.items);
+            itemsFoundInThisBatch += pageData.items.length;
+          }
+          
+          if (pageData.nextPage === null) {
+            hasMore = false;
+          }
+        } else {
+          updateStatus(`A fetch request failed: ${result.reason}`);
+          hasMore = false; 
+        }
+      }
+      
+      applyFilterAndRender();  
       updateStatus(`Searching ${allFetchedItems.length} videos...`);
       
-      currentPage = result.nextPage;
+      if (itemsFoundInThisBatch === 0) {
+        hasMore = false;
+      }
+      
+      currentPage += CONCURRENT_REQUESTS;
     }
 
     updateStatus(`Done — searched ${allFetchedItems.length} videos`);
@@ -138,9 +167,9 @@ async function progressiveSearch() {
     console.error('progressiveSearch error:', err);
     updateStatus('An error occurred: ' + (err.message || err), true);
   } finally {
-    isSearching = false; 
-    searchButton.disabled = false; 
-    searchButton.textContent = 'Search'; 
+    isSearching = false;  
+    searchButton.disabled = false;  
+    searchButton.textContent = 'Search';  
   }
 }
 
