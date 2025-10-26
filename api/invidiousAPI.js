@@ -38,7 +38,7 @@ export default async function handler(request, response) {
   const playlistUrl = searchParams.get('playlistUrl');
   let invidiousInstance = searchParams.get('invidiousInstance');
   
-  const continuation = searchParams.get('continuation') || '';
+  const page = parseInt(searchParams.get('page') || '1', 10);
 
   if (!playlistUrl || !invidiousInstance) {
     return response.status(400).json({ error: "Missing required parameters." });
@@ -57,21 +57,17 @@ export default async function handler(request, response) {
   }
 
   let itemsOnThisPage = [];
-  let nextContinuationToken = null;
+  let nextPage = null;
 
   try {
-    let apiUrl = `https://${invidiousInstance}/api/v1/playlists/${encodeURIComponent(playlistId)}`;
-    
-    if (continuation) {
-      apiUrl += `?continuation=${encodeURIComponent(continuation)}`;
-    }
+    const apiUrl = `https://${invidiousInstance}/api/v1/playlists/${encodeURIComponent(playlistId)}?page=${page}`;
 
     const invidiousResponse = await fetch(apiUrl, {
       headers: { 'Accept': 'application/json' }
     });
 
     if (invidiousResponse.status === 404) {
-      return response.status(200).json({ items: [], nextContinuation: null });
+      return response.status(200).json({ items: [], nextPage: null });
     }
 
     if (!invidiousResponse.ok) {
@@ -82,12 +78,12 @@ export default async function handler(request, response) {
     
     if (data && Array.isArray(data.videos) && data.videos.length > 0) {
       itemsOnThisPage = transformInvidiousVideos(data.videos, invidiousInstance);
-      nextContinuationToken = data.continuation || null;
+      nextPage = page + 1;
     }
 
     return response.status(200).json({
       items: itemsOnThisPage,
-      nextContinuation: nextContinuationToken 
+      nextPage: nextPage 
     });
 
   } catch (error) {

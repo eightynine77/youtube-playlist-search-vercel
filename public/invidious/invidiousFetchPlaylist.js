@@ -57,6 +57,10 @@ function renderResultsList(itemsToShow) {
   });
 }
 
+/**
+ * This function now reads filter options directly from the DOM,
+ * using the global 'currentSearchTerm' set by the button click.
+ */
 function applyFilterAndRender() {
   const wholeWordOnly = !!document.getElementById('wholeWordMatch')?.checked;
   const searchMode = document.querySelector('input[name="searchMode"]:checked')?.value || 'title';
@@ -73,71 +77,28 @@ function getSelectedInstance() {
     return instanceSelect?.value;
 }
 
-function transformInvidiousVideos(videos = [], instanceDomain) {
-  return videos.map(video => {
-    const thumbnail = video.videoThumbnails?.find(t => t.quality === 'medium') || video.videoThumbnails?.[0];
-    return {
-      videoId: video.videoId,
-      title: video.title,
-      channelTitle: video.author,
-      channelId: video.authorId,
-      description: '', 
-      thumbnailUrl: thumbnail?.url ? `https://${instanceDomain}${thumbnail.url}` : '',
-      videoUrl: `https://www.youtube.com/watch?v=${video.videoId}`,
-      channelHandle: null
-    };
-  });
-}
-
-async function fetchPlaylistPageClient(playlistId, invidiousInstance, continuation) {
-    let apiUrl = `https://${invidiousInstance}/api/v1/playlists/${encodeURIComponent(playlistId)}`;
+async function fetchPlaylistPageClient(playlistUrl, invidiousInstance, page) {
+    const url = `/api/invidiousAPI?playlistUrl=${encodeURIComponent(playlistUrl)}&invidiousInstance=${encodeURIComponent(invidiousInstance)}&page=${page}`;
     
-    if (continuation) {
-      apiUrl += `?continuation=${encodeURIComponent(continuation)}`;
-    }
-
-    const resp = await fetch(apiUrl, {
-        headers: { 'Accept': 'application/json' }
-    });
-    
+    const resp = await fetch(url);
     const json = await resp.json();
 
     if (!resp.ok) {
-        if (resp.status === 404) {
-          return { items: [], nextContinuation: null };
-        }
         throw new Error(json.error || `Server returned ${resp.status}`);
     }
     
-    const items = transformInvidiousVideos(json.videos, invidiousInstance);
-    
-    return {
-      items: items,
-      nextContinuation: json.continuation || null
-    };
+    return json;
 }
 
 async function progressiveSearch() {
   isSearching = true;
   allFetchedItems = [];
-  let currentContinuation = ''; 
-  let hasMore = true; 
-  
-  searchButton.disabled = true;  
+  let currentPage = 1; 
+  searchButton.disabled = true; 
   searchButton.textContent = 'Searching...';
   
   const playlistId = extractPlaylistId(currentPlaylistUrl);
-  let invidiousInstance; 
-
-  try {
-    invidiousInstance = new URL(getSelectedInstance().startsWith('http') ? getSelectedInstance() : `https://${getSelectedInstance()}`).hostname;
-  } catch (e) {
-    updateStatus('Invalid Invidious instance URL', true);
-    isSearching = false;
-    searchButton.disabled = false;
-    searchButton.textContent = 'Search';
-    return;
-  }
+  const invidiousInstance = getSelectedInstance();
 
   if (!playlistId) {
     updateStatus('Invalid playlist URL', true);
@@ -157,22 +118,18 @@ async function progressiveSearch() {
   updateStatus('Searching playlist...');
 
   try {
-    while (hasMore) {
+    while (currentPage !== null) {
       
-      const result = await fetchPlaylistPageClient(playlistId, invidiousInstance, currentContinuation);
+      const result = await fetchPlaylistPageClient(currentPlaylistUrl, invidiousInstance, currentPage);
 
       if (result.items && result.items.length > 0) {
         allFetchedItems.push(...result.items);
       }
 
-      applyFilterAndRender();  
+      applyFilterAndRender(); 
       updateStatus(`Searching ${allFetchedItems.length} videos...`);
       
-      if (result.nextContinuation) {
-        currentContinuation = result.nextContinuation;
-      } else {
-        hasMore = false; 
-      }
+      currentPage = result.nextPage;
     }
 
     updateStatus(`Done — searched ${allFetchedItems.length} videos`);
@@ -181,9 +138,9 @@ async function progressiveSearch() {
     console.error('progressiveSearch error:', err);
     updateStatus('An error occurred: ' + (err.message || err), true);
   } finally {
-    isSearching = false;  
-    searchButton.disabled = false;  
-    searchButton.textContent = 'Search';  
+    isSearching = false; 
+    searchButton.disabled = false; 
+    searchButton.textContent = 'Search'; 
   }
 }
 
