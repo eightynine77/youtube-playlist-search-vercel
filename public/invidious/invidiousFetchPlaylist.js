@@ -93,7 +93,7 @@ async function progressiveSearch() {
   
   const CONCURRENT_REQUESTS = 4;
   let currentPage = 1;
-  let hasMore = true; 
+  let hasMore = true;
 
   searchButton.disabled = true;  
   searchButton.textContent = 'Searching...';
@@ -125,20 +125,30 @@ async function progressiveSearch() {
       for (let i = 0; i < CONCURRENT_REQUESTS; i++) {
         pageNumbersToFetch.push(currentPage + i);
       }
+
       const fetchPromises = pageNumbersToFetch.map(page => 
         fetchPlaylistPageClient(currentPlaylistUrl, invidiousInstance, page)
       );
+
       const results = await Promise.allSettled(fetchPromises);
+      
       let itemsFoundInThisBatch = 0;
+
       for (const result of results) {
         if (result.status === 'fulfilled') {
           const pageData = result.value;
+          
           if (pageData.items && pageData.items.length > 0) {
             allFetchedItems.push(...pageData.items);
             itemsFoundInThisBatch += pageData.items.length;
           }
+          
+          if (pageData.nextPage === null) {
+            hasMore = false;
+          }
         } else {
-          updateStatus(`A fetch request failed: ${result.reason.message}`);
+          updateStatus(`A fetch request failed: ${result.reason}`);
+          hasMore = false; 
         }
       }
       
@@ -146,15 +156,16 @@ async function progressiveSearch() {
       updateStatus(`Searching ${allFetchedItems.length} videos...`);
       
       if (itemsFoundInThisBatch === 0) {
-        hasMore = false; 
+        hasMore = false;
       }
-
+      
       currentPage += CONCURRENT_REQUESTS;
     }
 
     updateStatus(`Done — searched ${allFetchedItems.length} videos`);
 
   } catch (err) {
+    console.error('progressiveSearch error:', err);
     updateStatus('An error occurred: ' + (err.message || err), true);
   } finally {
     isSearching = false;  
