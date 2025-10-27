@@ -5,6 +5,7 @@ let currentSearchTerm = '';
 let currentPlaylistUrl = ''; 
 let isSearching = false;
 
+const STORAGE_KEY = 'invidiousInstance';
 const resultsContainer = document.getElementById('results');
 const statusMessageEl = document.getElementById('statusMessage');
 const form = document.getElementById('searchForm');
@@ -196,3 +197,42 @@ if (form) {
 }
 
 if (!resultsContainer) console.warn('No #results element found. UI may not render.');
+
+function saveInstanceSelection() {
+  if (!instanceSelect || !instanceInput) return;
+
+  instanceSelect.addEventListener('change', () => {
+    const selectedValue = instanceSelect.value;
+    localStorage.setItem(STORAGE_KEY, selectedValue);
+    instanceInput.value = '';
+  });
+
+  instanceInput.addEventListener('input', () => {
+    const manualValue = instanceInput.value.trim();
+    if (manualValue) {
+      localStorage.setItem(STORAGE_KEY, manualValue);
+    }
+  });
+}
+
+function loadSavedInstance() {
+  if (!instanceSelect || !instanceInput) return;
+
+  const savedInstance = localStorage.getItem(STORAGE_KEY);
+  if (!savedInstance) {
+    return; 
+  }
+
+  const isDropdownOption = Array.from(instanceSelect.options)
+                                .some(opt => opt.value === savedInstance);
+
+  if (isDropdownOption) {
+    instanceSelect.value = savedInstance;
+    instanceInput.value = '';
+  } else {
+    instanceInput.value = savedInstance;
+  }
+}
+
+saveInstanceSelection();
+loadSavedInstance();
