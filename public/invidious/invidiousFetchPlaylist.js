@@ -93,7 +93,7 @@ async function progressiveSearch() {
   
   const CONCURRENT_REQUESTS = 4;
   let currentPage = 1;
-  let hasMore = true;
+  let hasMore = true; 
 
   searchButton.disabled = true;  
   searchButton.textContent = 'Searching...';
@@ -142,13 +142,8 @@ async function progressiveSearch() {
             allFetchedItems.push(...pageData.items);
             itemsFoundInThisBatch += pageData.items.length;
           }
-          
-          if (pageData.nextPage === null) {
-            hasMore = false;
-          }
         } else {
-          updateStatus(`A fetch request failed: ${result.reason}`);
-          hasMore = false; 
+          updateStatus(`A fetch request failed: ${result.reason.message}`);
         }
       }
       
@@ -156,7 +151,7 @@ async function progressiveSearch() {
       updateStatus(`Searching ${allFetchedItems.length} videos...`);
       
       if (itemsFoundInThisBatch === 0) {
-        hasMore = false;
+        hasMore = false; 
       }
       
       currentPage += CONCURRENT_REQUESTS;
@@ -173,7 +168,6 @@ async function progressiveSearch() {
     searchButton.textContent = 'Search';  
   }
 }
-
 
 if (form) {
   form.addEventListener('submit', async (ev) => {
