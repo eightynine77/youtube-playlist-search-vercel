@@ -148,7 +148,6 @@ async function progressiveSearch() {
           }
         } else {
           updateStatus(`A fetch request failed: ${result.reason}`);
-          hasMore = false; 
         }
       }
       
