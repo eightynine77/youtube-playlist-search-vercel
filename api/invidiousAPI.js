@@ -18,7 +18,7 @@ function transformInvidiousVideos(videos = [], instanceDomain) {
       title: video.title,
       channelTitle: video.author,
       channelId: video.authorId,
-      description: '', 
+      description: video.description || '', 
       thumbnailUrl: thumbnail?.url ? `https://${instanceDomain}${thumbnail.url}` : '',
       videoUrl: `https://www.youtube.com/watch?v=${video.videoId}`,
       channelHandle: null
