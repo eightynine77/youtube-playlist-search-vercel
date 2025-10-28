@@ -390,9 +390,13 @@ function renderResultsList(itemsToShow) {
   if (!resultsContainer) return;
   clearResults();
   if (!itemsToShow || itemsToShow.length === 0) {
-    resultsContainer.innerHTML = '<li class="empty-result">No results</li>';
-    return;
-  }
+    if (isSearching) {
+      return;
+    } else {
+      resultsContainer.innerHTML = '<li class="empty-result">No results</li>';
+      return;
+    }
+  }
 
   itemsToShow.forEach(it => {
     const li = document.createElement('li');
@@ -470,6 +474,7 @@ async function progressiveSearch() {
     updateStatus('An error occurred: ' + (err.message || err), true);
   } finally {
     isSearching = false;
+    applyFilterAndRender();
   }
 }
 
