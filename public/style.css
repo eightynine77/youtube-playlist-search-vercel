@@ -238,6 +238,7 @@ button:hover {
 }
 
 .delete-cache-btn {
+  width: fit-content;
   padding: 8px 12px;
   color: white;
   border: none;
