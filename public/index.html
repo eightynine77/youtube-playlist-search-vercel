@@ -32,20 +32,21 @@
         </form>
         
         <p id="statusMessage"></p>
+        <p id="emptyResultMessage" class="empty-result"></p>
         <ul id="results" class="video-list"></ul>
         
         <div id="cacheModal" class="modal-overlay" style="display: none;">
-      <div class="modal-content">
-        <button id="closeModalBtn" class="modal-close-btn">&times;</button>
-        <h2>Cached Playlists</h2>
-        <p>You can clear the cache for individual playlists here.</p>
-        <ul id="cachedPlaylistsList" class="cached-playlist-list">
-          <li class="empty-result">No playlists are cached.</li>
-        </ul>
-        <div class="modal-footer">
-          <button id="clearAllCacheBtn" class="clear-all-btn">Clear Entire Cache</button>
-        </div>
-        <div>
+          <div class="modal-content">
+            <button id="closeModalBtn" class="modal-close-btn">&times;</button>
+            <h2>Cached Playlists</h2>
+            <p>You can clear the cache for individual playlists here.</p>
+            <ul id="cachedPlaylistsList" class="cached-playlist-list">
+              <li class="empty-result">No playlists are cached.</li>
+            </ul>
+            <div class="modal-footer">
+              <button id="clearAllCacheBtn" class="clear-all-btn">Clear Entire Cache</button>
+            </div>
+            <div>
           <p class="cookie-message-style" id="cookie-message"></p>
         </div>
       </div>

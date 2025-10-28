@@ -9,6 +9,7 @@ let playlistTotal = null;
 
 const resultsContainer = document.getElementById('results');
 const statusMessageEl = document.getElementById('statusMessage');
+const emptyMessageEl = document.getElementById('emptyResultMessage');
 const modalStatusEl = document.getElementById('cookie-message');
 const form = document.getElementById('searchForm');
 const DB_NAME = 'ytplCache';
@@ -384,7 +385,11 @@ if (clearAllBtn) {
   });
 }
 
-function clearResults() { if (!resultsContainer) return; resultsContainer.innerHTML = ''; }
+function clearResults() { 
+  if (!resultsContainer) return; 
+  resultsContainer.innerHTML = ''; 
+  if (emptyMessageEl) emptyMessageEl.textContent = '';
+}
 
 function renderResultsList(itemsToShow) {
   if (!resultsContainer) return;
@@ -393,7 +398,7 @@ function renderResultsList(itemsToShow) {
     if (isSearching) {
       return;
     } else {
-      resultsContainer.innerHTML = '<li class="empty-result">No results</li>';
+      if (emptyMessageEl) emptyMessageEl.textContent = 'no results found';
       return;
     }
   }
