@@ -12,29 +12,29 @@
   <div class="container">
     <a href="#" id="clearCacheLink" tabindex="10"><b>clear cache</b></a>
     <h1>youtube playlist video search</h1>
-        <form id="searchForm">
-            <label for="playlistUrl">YouTube Playlist Link:</label>
-            <input type="text" id="playlistUrl" placeholder="Paste playlist URL (e.g., https://www.youtube.com/playlist?list=...)" required autofocus tabindex="1">
-            <label for="searchTerm">Search Term:</label>
-            <input type="text" id="searchTerm" placeholder="Search videos by title" tabindex="2">
-            <div class="checkbox-group">
-                <input type="checkbox" id="wholeWordMatch" tabindex="3">
-                <label for="wholeWordMatch">Match whole word</label>
-            </div>
-            <div class="search-mode-group">
-              <p style="font-size: 22px;">search by:</p>
-              <label><input type="radio" name="searchMode" value="title" checked tabindex="4"> video title (default)</label>
-              <label><input type="radio" name="searchMode" value="both" tabindex="5"> video description and title</label>
-              <label><input type="radio" name="searchMode" value="description" tabindex="6"> video description</label>
-              <label><input type="radio" name="searchMode" value="channel" tabindex="7"> channel name</label>
-            </div>
-            <button type="submit" tabindex="8">Search</button>
-        </form>
-        
-        <p id="statusMessage"></p>
-        <ul id="results" class="video-list"></ul>
-        
-        <div id="cacheModal" class="modal-overlay" style="display: none;">
+    <form id="searchForm">
+      <label for="playlistUrl">YouTube Playlist Link:</label>
+      <input type="text" id="playlistUrl" placeholder="Paste playlist URL (e.g., https://www.youtube.com/playlist?list=...)" required autofocus tabindex="1">
+      <label for="searchTerm">Search Term:</label>
+      <input type="text" id="searchTerm" placeholder="Search videos by title" tabindex="2">
+      <div class="checkbox-group">
+        <input type="checkbox" id="wholeWordMatch" tabindex="3">
+        <label for="wholeWordMatch">Match whole word</label>
+      </div>
+      <div class="search-mode-group">
+        <p style="font-size: 22px;">search by:</p>
+        <label><input type="radio" name="searchMode" value="title" checked tabindex="4"> video title (default)</label>
+        <label><input type="radio" name="searchMode" value="both" tabindex="5"> video description and title</label>
+        <label><input type="radio" name="searchMode" value="description" tabindex="6"> video description</label>
+        <label><input type="radio" name="searchMode" value="channel" tabindex="7"> channel name</label>
+      </div>
+      <button type="submit" tabindex="8">Search</button>
+    </form>
+
+    <p id="statusMessage"></p>
+    <ul id="results" class="video-list"></ul>
+
+    <div id="cacheModal" class="modal-overlay" style="display: none;">
       <div class="modal-content">
         <button id="closeModalBtn" class="modal-close-btn">&times;</button>
         <h2>Cached Playlists</h2>
@@ -46,12 +46,10 @@
           <button id="clearAllCacheBtn" class="clear-all-btn">Clear Entire Cache</button>
         </div>
         <div>
-          <p class="cookie-message-style" id="cookie-message"></p>
-        </div>
+        <p class="cookie-message-style" id="cookie-message"></p>
       </div>
     </div>
   </div>
-
   <script type="module" src="javascript.js"></script>
 </body>
 </html>
