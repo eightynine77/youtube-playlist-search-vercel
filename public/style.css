@@ -99,7 +99,7 @@ button:hover {
 }
 
 .video-info .channel-link {
-  display: block;
+  display: inline;
   font-size: 1.1em;
   color: #cc181e;
   font-weight: normal;
@@ -108,14 +108,16 @@ button:hover {
 }
 
 .video-info .channel-name {
-    font-size: 1.1em;
-    color: #cc181e;
-    text-decoration: underline;
-    font-weight: normal;
-    word-break: break-word;
+  display: inline;
+  font-size: 1.1em;
+  color: #cc181e;
+  text-decoration: underline;
+  font-weight: normal;
+  word-break: break-word;
 }
 
 .video-info .youtube-channel-text {
+  display: block;
   font-size: 1.1em;
   word-break: break-word;
   font-weight: normal;
