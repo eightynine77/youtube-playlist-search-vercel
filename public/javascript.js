@@ -406,7 +406,15 @@ function renderResultsList(itemsToShow) {
     const title = (it.title || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const videoUrl = it.videoUrl || '#';
     const channelId = it.channelId || '';
+    const channelHandle = it.channelHandle || null;
     const channelTitle = it.channelTitle || '';
+
+    const channelTitleHtml = channelId 
+      ? `<a href="https://www.youtube.com/channel/${channelId}" class="channel-link" target="_blank" rel="noopener noreferrer">${channelTitle || ''}</a>` 
+      : `<span class="channel-name">${channelTitle || ''}</span>`;
+    const channelHandleHtml = channelHandle 
+      ? ` — <a href="https://www.youtube.com/${channelHandle}" class="channel-link" target="_blank" rel="noopener noreferrer">${channelHandle}</a>` 
+      : '';
 
     li.innerHTML = `
       <img src="${thumbnailUrl}" alt="${title} thumbnail" loading="lazy" />
@@ -414,7 +422,7 @@ function renderResultsList(itemsToShow) {
         <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">${title}</a>
         <div class="channel-info-container">
           <span class="youtube-channel-text">youtube channel: </span>
-          ${channelId ? `<a href="https://www.youtube.com/channel/${channelId}" class="channel-link" target="_blank" rel="noopener noreferrer">${channelTitle || ''}</a>` : `<span class="channel-name">${channelTitle || ''}</span>`}
+          ${channelTitleHtml}${channelHandleHtml}
         </div>
       </div>
     `;
