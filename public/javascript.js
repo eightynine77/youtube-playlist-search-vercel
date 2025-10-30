@@ -413,7 +413,7 @@ function renderResultsList(itemsToShow) {
       ? `<a href="https://www.youtube.com/channel/${channelId}" class="channel-link" target="_blank" rel="noopener noreferrer">${channelTitle || ''}</a>` 
       : `<span class="channel-name">${channelTitle || ''}</span>`;
     const channelHandleHtml = channelHandle 
-      ? ` — <a href="https://www.youtube.com/${channelHandle}" class="channel-link" target="_blank" rel="noopener noreferrer">${channelHandle}</a>` 
+      ? `  —  <a href="https://www.youtube.com/${channelHandle}" class="channel-link" target="_blank" rel="noopener noreferrer">${channelHandle}</a>` 
       : '';
 
     li.innerHTML = `
