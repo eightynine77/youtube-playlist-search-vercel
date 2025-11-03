@@ -16,7 +16,7 @@ const DB_VER = 2;
 const STORE_PLAYLISTS = 'playlists';
 const STORE_PAGES = 'pages';
 const COOKIE_EXPIRY_YEARS = 10;
-const FETCH_CHUNK_SIZE = 1;
+const FETCH_CHUNK_SIZE = 4;
 const TRIM_FIELDS = ['videoId', 'title', 'channelTitle', 'channelId', 'channelHandle', 'thumbnailUrl', 'videoUrl', 'description'];
 const COOKIE_PREFIX = 'ytpl_cached_';
 const RENEWAL_THRESHOLD_MS = 24 * 60 * 60 * 1000; 
@@ -413,7 +413,7 @@ function renderResultsList(itemsToShow) {
       ? `<a href="https://www.youtube.com/channel/${channelId}" class="channel-link" target="_blank" rel="noopener noreferrer">${channelTitle || ''}</a>` 
       : `<span class="channel-name">${channelTitle || ''}</span>`;
     const channelHandleHtml = channelHandle 
-      ? `  —  <a href="https://www.youtube.com/${channelHandle}" class="channel-link" target="_blank" rel="noopener noreferrer">${channelHandle}</a>` 
+      ? ` — <a href="https://www.youtube.com/${channelHandle}" class="channel-link" target="_blank" rel="noopener noreferrer">${channelHandle}</a>` 
       : '';
 
     li.innerHTML = `
@@ -528,4 +528,5 @@ function checkAndRenewCookies() {
 }
 
 checkAndRenewCookies(); 
+
 setInterval(checkAndRenewCookies, RENEWAL_INTERVAL_MS); 
