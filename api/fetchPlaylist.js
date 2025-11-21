@@ -3,6 +3,12 @@ const apiKeys = [
   process.env.YOUTUBE_API_KEY2,
   process.env.YOUTUBE_API_KEY3,
   process.env.YOUTUBE_API_KEY4,
+  process.env.YOUTUBE_API_KEY5,
+  process.env.YOUTUBE_API_KEY6,
+  process.env.YOUTUBE_API_KEY7,
+  process.env.YOUTUBE_API_KEY8,
+  process.env.YOUTUBE_API_KEY9,
+  process.env.YOUTUBE_API_KEY10,
 ].filter(Boolean);
 
 let keyIndex = 0;
@@ -137,4 +143,5 @@ export default async function handler(request, response) {
     console.error("Handler Error:", error);
     return response.status(500).json({ error: `An error occurred while fetching playlist videos. ${error.message}` });
   }
+
 }
