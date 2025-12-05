@@ -442,7 +442,11 @@ async function progressiveSearch() {
   let nextPageToken = '';
   allFetchedItems = [];
   playlistTotal = null;
-  updateStatus('Searching playlist...');
+  if (playlistTotal && Number.isFinite(playlistTotal)) {
+    updateStatus(`Searching ${allFetchedItems.length} of ${playlistTotal} videos`);
+  } else {
+    updateStatus(`Searching ${allFetchedItems.length} videos`);
+  }
 
   try {
     do {
@@ -530,5 +534,6 @@ function checkAndRenewCookies() {
 checkAndRenewCookies(); 
 
 setInterval(checkAndRenewCookies, RENEWAL_INTERVAL_MS); 
+
 
 
