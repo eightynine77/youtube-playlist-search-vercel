@@ -16,7 +16,7 @@ const DB_VER = 2;
 const STORE_PLAYLISTS = 'playlists';
 const STORE_PAGES = 'pages';
 const COOKIE_EXPIRY_YEARS = 10;
-const FETCH_CHUNK_SIZE = 4;
+const FETCH_CHUNK_SIZE = 10;
 const TRIM_FIELDS = ['videoId', 'title', 'channelTitle', 'channelId', 'channelHandle', 'thumbnailUrl', 'videoUrl', 'description'];
 const COOKIE_PREFIX = 'ytpl_cached_';
 const RENEWAL_THRESHOLD_MS = 24 * 60 * 60 * 1000; 
@@ -443,9 +443,9 @@ async function progressiveSearch() {
   allFetchedItems = [];
   playlistTotal = null;
   if (playlistTotal && Number.isFinite(playlistTotal)) {
-    updateStatus(`Searching ${allFetchedItems.length} videos`);
-  } else {
     updateStatus(`Searching ${allFetchedItems.length} of ${playlistTotal} videos`);
+  } else {
+    updateStatus(`Searching ${allFetchedItems.length} videos`);
   }
 
   try {
