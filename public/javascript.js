@@ -443,9 +443,9 @@ async function progressiveSearch() {
   allFetchedItems = [];
   playlistTotal = null;
   if (playlistTotal && Number.isFinite(playlistTotal)) {
-    updateStatus(`Searching ${allFetchedItems.length} of ${playlistTotal} videos`);
-  } else {
     updateStatus(`Searching ${allFetchedItems.length} videos`);
+  } else {
+    updateStatus(`Searching ${allFetchedItems.length} of ${playlistTotal} videos`);
   }
 
   try {
