@@ -445,7 +445,7 @@ async function progressiveSearch() {
   if (playlistTotal && Number.isFinite(playlistTotal)) {
     updateStatus(`Searching ${allFetchedItems.length} of ${playlistTotal} videos`);
   } else {
-    updateStatus(`Searching ${allFetchedItems.length} videos`);
+    updateStatus(`Searching ${allFetchedItems.length} videos...`);
   }
 
   try {
@@ -477,7 +477,7 @@ async function progressiveSearch() {
       if (playlistTotal && Number.isFinite(playlistTotal)) {
         updateStatus(`Searching ${allFetchedItems.length} of ${playlistTotal} videos`);
       } else {
-        updateStatus(`Searching ${allFetchedItems.length} videos`);
+        updateStatus(`Searching ${allFetchedItems.length} videos...`);
       }
     } while (nextPageToken);
     updateStatus(`Done — searched ${allFetchedItems.length} videos`);
@@ -576,6 +576,7 @@ function checkAndRenewCookies() {
 checkAndRenewCookies(); 
 
 setInterval(checkAndRenewCookies, RENEWAL_INTERVAL_MS); 
+
 
 
 
