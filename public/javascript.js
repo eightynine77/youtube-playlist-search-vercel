@@ -508,27 +508,69 @@ if (form) {
 
 if (!resultsContainer) console.warn('No #results element found. UI may not render.');
 
+async function renewIndexedDBFreshness() {
+  try {
+    const playlists = await idbGetAll(STORE_PLAYLISTS);
+    if (!playlists || playlists.length === 0) return;
+
+    const db = await openDb();
+    const tx = db.transaction(STORE_PLAYLISTS, 'readwrite');
+    const store = tx.objectStore(STORE_PLAYLISTS);
+    const now = Date.now();
+
+    playlists.forEach(pl => {
+      pl.lastCached = now;
+      store.put(pl);
+    });
+
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+    
+    console.log(`Success: Renewed freshness for ${playlists.length} playlists in IDB.`);
+  } catch (err) {
+    console.warn('Auto-renew: Failed to touch IndexedDB.', err);
+  }
+}
+
 function checkAndRenewCookies() {
   const allCookies = document.cookie.split(';');
+  let renewalCount = 0;
+
   for (const cookie of allCookies) {
-    const name = cookie.trim().split('=')[0];
-    if (name.startsWith(COOKIE_PREFIX)) {
+    const [name, ...rest] = cookie.trim().split('=');
+    if (name && name.startsWith(COOKIE_PREFIX)) {
       try {
-        const cookieValue = getCookie(name);
-        if (cookieValue) {
-          const data = JSON.parse(decodeURIComponent(cookieValue));
-          const timeSinceLastSet = Date.now() - data.lastSet;
-          
-          if (timeSinceLastSet > RENEWAL_THRESHOLD_MS) {
-            console.log(`Renewing stale cookie: ${name}`);
-            setLongCookie(name, data.value, COOKIE_EXPIRY_YEARS);
+        const rawValue = getCookie(name);
+        if (!rawValue) continue;
+
+        let data;
+        let shouldRenew = false;
+
+        try {
+          data = JSON.parse(decodeURIComponent(rawValue));
+          if (typeof data !== 'object') throw new Error('Legacy format');
+          if (Date.now() - data.lastSet > 10000) { 
+            shouldRenew = true;
           }
+        } catch (e) {
+          data = { value: rawValue, lastSet: 0 };
+          shouldRenew = true;
+        }
+
+        if (shouldRenew) {
+          setLongCookie(name, data.value, COOKIE_EXPIRY_YEARS);
+          renewalCount++;
         }
       } catch (e) {
-        console.error(`Could not parse or renew cookie ${name}`, e);
+        console.error(`Auto-renew: Could not process cookie ${name}`, e);
       }
     }
   }
+  if (renewalCount > 0) console.log(`Auto-renew: Updated ${renewalCount} cookies.`);
+  
+  renewIndexedDBFreshness();
 }
 
 checkAndRenewCookies(); 
