@@ -576,7 +576,3 @@ function checkAndRenewCookies() {
 checkAndRenewCookies(); 
 
 setInterval(checkAndRenewCookies, RENEWAL_INTERVAL_MS); 
-
-
-
-
