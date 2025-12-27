@@ -221,8 +221,23 @@ button:hover {
 }
 
 .cached-playlist-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   margin-right: 15px;
   overflow: hidden; 
+}
+
+.playlist-url {
+  display: block;
+  white-space: nowrap;    
+  overflow-x: auto;       
+  font-size: 0.85em;      
+  color: #cc181e;        
+  margin-top: 4px;
+  padding-bottom: 4px;    
+  scrollbar-width: thin;
+  scrollbar-color: #ccc transparent;
 }
 
 .cached-playlist-info strong {

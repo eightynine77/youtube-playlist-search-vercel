@@ -239,7 +239,8 @@ async function populateCacheList() {
     li.innerHTML = `
       <div class="cached-playlist-info">
         <strong>${pl.playlistTitle || 'Unknown Title'}</strong>
-        <span>By: ${pl.channelTitle || 'Unknown Channel'} (ID: ${pl.playlistId})</span>
+        <span>By: ${pl.channelTitle || 'Unknown Channel'}</span>
+        <span class="playlist-url">https://www.youtube.com/playlist?list=${pl.playlistId}</span>
       </div>
       <button class="delete-cache-btn" data-playlist-id="${pl.playlistId}">Delete</button>
     `;
