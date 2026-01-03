@@ -22,6 +22,26 @@ const COOKIE_PREFIX = 'ytpl_cached_';
 const RENEWAL_THRESHOLD_MS = 24 * 60 * 60 * 1000; 
 const RENEWAL_INTERVAL_MS = 6 * 60 * 60 * 1000;   
 
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Tab") {
+    const focusable = [...document.querySelectorAll('[tabindex]:not([tabindex="-1"])')]
+      .sort((a, b) => a.tabIndex - b.tabIndex);
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    }
+
+    else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+});
+
 function openDb() {
   return new Promise((resolve, reject) => {
     if (!('indexedDB' in window)) return reject(new Error('IndexedDB not supported'));
