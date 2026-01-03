@@ -457,6 +457,7 @@ function applyFilterAndRender() {
   const searchMode = document.querySelector('input[name="searchMode"]:checked')?.value || 'title';
   const filtered = filterItems(allFetchedItems, currentSearchTerm, wholeWordOnly, searchMode);
   renderResultsList(filtered);
+  return filtered.length;
 }
 
 async function progressiveSearch() {
@@ -493,15 +494,17 @@ async function progressiveSearch() {
         allFetchedItems.push(...itemsInChunk);
       }
 
-      applyFilterAndRender();
+      const matchCount = applyFilterAndRender();
 
       if (playlistTotal && Number.isFinite(playlistTotal)) {
-        updateStatus(`Searching ${allFetchedItems.length} of ${playlistTotal} videos`);
+        updateStatus(`Searching ${allFetchedItems.length} of ${playlistTotal} videos (${matchCount} videos found)`);
       } else {
-        updateStatus(`Searching ${allFetchedItems.length} videos...`);
+        updateStatus(`Searching ${allFetchedItems.length} videos... (${matchCount} videos found)`);
       }
     } while (nextPageToken);
-    updateStatus(`Done — searched ${allFetchedItems.length} videos`);
+
+    const finalMatchCount = applyFilterAndRender();
+    updateStatus(`Done — searched ${allFetchedItems.length} videos | ${finalMatchCount} videos found`);
   } catch (err) {
     console.error('progressiveSearch error:', err);
     updateStatus('An error occurred: ' + (err.message || err), true);
