@@ -58,6 +58,14 @@ button:hover {
     font-style: italic;
 }
 
+#stopBtn {
+  background-color: #666;
+}
+
+#stopBtn:hover {
+  background-color: #444;
+}
+
 .status-error {
   color: #cc181e; 
   font-weight: bold;

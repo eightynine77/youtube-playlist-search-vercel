@@ -9,6 +9,8 @@ let playlistTotal = null;
 
 const resultsContainer = document.getElementById('results');
 const statusMessageEl = document.getElementById('statusMessage');
+const searchBtn = document.getElementById('searchBtn');
+const stopBtn = document.getElementById('stopBtn');
 const modalStatusEl = document.getElementById('cookie-message');
 const form = document.getElementById('searchForm');
 const DB_NAME = 'ytplCache';
@@ -472,7 +474,10 @@ async function progressiveSearch() {
 
   try {
     do {
-      if (!isSearching) { updateStatus(''); return; }
+      if (!isSearching) { 
+        updateStatus('Search stopped'); 
+        return; 
+      }
 
       const itemsInChunk = [];
       let currentResult;
@@ -511,13 +516,27 @@ async function progressiveSearch() {
   } finally {
     isSearching = false;
     applyFilterAndRender();
+    if (searchBtn) searchBtn.disabled = false;
+    if (stopBtn) stopBtn.disabled = true;
   }
+}
+
+if (stopBtn) {
+  stopBtn.addEventListener('click', () => {
+    if (isSearching) {
+      isSearching = false; 
+      updateStatus('stopping search...');
+    }
+  });
 }
 
 if (form) {
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     isSearching = false;
+
+    if (searchBtn) searchBtn.disabled = true;
+    if (stopBtn) stopBtn.disabled = false;
 
     currentPlaylistUrl = document.getElementById('playlistUrl')?.value?.trim() || '';
     currentSearchTerm = document.getElementById('searchTerm')?.value?.trim() || '';

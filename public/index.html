@@ -27,7 +27,10 @@
         <label><input type="radio" name="searchMode" value="description" tabindex="6"> video description</label>
         <label><input type="radio" name="searchMode" value="channel" tabindex="7"> channel name</label>
       </div>
-      <button type="submit" tabindex="8">Search</button>
+      <div class="search-controls">
+        <button type="submit" id="searchBtn" tabindex="8">Search</button>
+        <button type="button" id="stopBtn" tabindex="9" disabled>Stop</button>
+      </div>
     </form>
 
     <p id="statusMessage"></p>
