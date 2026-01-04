@@ -58,6 +58,11 @@ button:hover {
     font-style: italic;
 }
 
+#counterText {
+  text-align: center; 
+  display: none;
+}
+
 #stopBtn {
   background-color: #666;
 }

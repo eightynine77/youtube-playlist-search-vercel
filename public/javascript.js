@@ -6,9 +6,11 @@ let currentPlaylistUrl = '';
 let isSearching = false;
 let dbPromise = null;
 let playlistTotal = null;
+let loadingCounter = 0;
 
 const resultsContainer = document.getElementById('results');
 const statusMessageEl = document.getElementById('statusMessage');
+const counterTextEl = document.getElementById('counterText');
 const searchBtn = document.getElementById('searchBtn');
 const stopBtn = document.getElementById('stopBtn');
 const modalStatusEl = document.getElementById('cookie-message');
@@ -191,6 +193,11 @@ function trimItems(rawItems) {
   });
 }
 
+function updateCounter() {
+  if (!counterTextEl) return;
+  counterTextEl.textContent = `loading: ${loadingCounter}`;
+}
+
 async function fetchPlaylistPageClient(playlistUrl, pageToken = '') {
   const playlistId = extractPlaylistId(playlistUrl);
   if (!playlistId) throw new Error('Invalid playlist URL');
@@ -207,6 +214,9 @@ async function fetchPlaylistPageClient(playlistUrl, pageToken = '') {
   }
 
   const url = `/api/fetchPlaylist?playlistUrl=${encodeURIComponent(playlistUrl)}&pageToken=${encodeURIComponent(pageToken || '')}`;
+
+  loadingCounter = (loadingCounter % 10) + 1;
+  updateCounter();
   const resp = await fetch(url);
   if (!resp.ok) {
     const text = await resp.text();
@@ -514,6 +524,7 @@ async function progressiveSearch() {
     console.error('progressiveSearch error:', err);
     updateStatus('An error occurred: ' + (err.message || err), true);
   } finally {
+    if (counterTextEl) counterTextEl.style.display = 'none';
     isSearching = false;
     applyFilterAndRender();
     if (searchBtn) searchBtn.disabled = false;
@@ -526,6 +537,7 @@ if (stopBtn) {
     if (isSearching) {
       isSearching = false; 
       updateStatus('stopping search...');
+      if (counterTextEl) counterTextEl.style.display = 'none';
     }
   });
 }
@@ -535,6 +547,10 @@ if (form) {
     ev.preventDefault();
     isSearching = false;
 
+    loadingCounter = 0;
+    updateCounter();
+    if (counterTextEl) counterTextEl.style.display = 'block';
+    
     if (searchBtn) searchBtn.disabled = true;
     if (stopBtn) stopBtn.disabled = false;
 
