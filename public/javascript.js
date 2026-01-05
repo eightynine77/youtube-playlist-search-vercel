@@ -23,7 +23,6 @@ const COOKIE_EXPIRY_YEARS = 10;
 const FETCH_CHUNK_SIZE = 10;
 const TRIM_FIELDS = ['videoId', 'title', 'channelTitle', 'channelId', 'channelHandle', 'thumbnailUrl', 'videoUrl', 'description'];
 const COOKIE_PREFIX = 'ytpl_cached_';
-const RENEWAL_THRESHOLD_MS = 24 * 60 * 60 * 1000; 
 const RENEWAL_INTERVAL_MS = 6 * 60 * 60 * 1000;   
 
 document.addEventListener("keydown", function (e) {
