@@ -1,0 +1,11 @@
+Copyright (c) 2026, Jacob
+
+This project is dual-licensed. You may choose **either** of the following licenses when using,
+copying, modifying, or distributing this software:
+  * GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later)
+  * Server Side Public License v1 (SSPL-1.0) — MongoDB, Inc.
+
+To accept the terms of this project, you must comply with the terms of the license you select.
+When redistributing, include a copy of the chosen license and this copyright notice.
+
+SPDX-License-Identifier: (AGPL-3.0-or-later OR SSPL-1.0)
