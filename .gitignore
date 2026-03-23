@@ -5,3 +5,4 @@ package.json
 .env*.local
 .vercel
 vercel.json
+.ignore
