@@ -1,0 +1,49 @@
+body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+h1 { text-align: center; font-size: 1.8em; }
+.container { max-width: 800px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+form { margin-bottom: 20px; }
+label { display: block; margin: 10px 0 5px; }
+input[type="text"] { width: 100%; padding: 10px; box-sizing: border-box; font-size: 1em; border: 1px solid #ccc; border-radius: 4px; color: #000; }
+button { width: 100%; padding: 12px; background-color: #cc181e; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; margin-top: 10px; transition: all 0.2s; }
+button:hover { background-color: #a81015; }
+button:disabled { background-color: #ccc; cursor: not-allowed; }
+.checkbox-group { display: flex; align-items: center; margin-top: 10px; gap: 8px; }
+.checkbox-group input[type="checkbox"] { width: 18px; height: 18px; margin: 0; cursor: pointer; }
+.checkbox-group label { margin: 0; display: inline-block; cursor: pointer; user-select: none; }
+.search-mode-group { margin-top: 15px; padding: 10px; background: #f9f9f9; border-radius: 6px; border: 1px solid #ddd; }
+.search-mode-group p { margin-top: 0; margin-bottom: 10px; font-weight: bold; }
+.search-mode-group label { display: inline-block; margin-right: 15px; margin-top: 5px; font-weight: normal; cursor: pointer; }
+.search-mode-group input[type="radio"] { margin-right: 5px; }
+.search-controls { display: flex; gap: 10px; margin-top: 15px; }
+.search-controls button { margin-top: 0; }
+#statusMessage { margin-top: 10px; font-weight: bold; color: #333; }
+#counterText { margin-top: 5px; font-size: 0.9em; color: #666; }
+.video-list { list-style: none; padding: 0; }
+.video-item { display: flex; margin-bottom: 15px; background: #fafafa; padding: 10px; border-radius: 5px; border: 1px solid #ddd; gap: 15px; }
+.video-item img { width: 120px; height: 90px; object-fit: cover; border-radius: 4px; }
+.video-details { display: flex; flex-direction: column; justify-content: center; flex: 1; min-width: 0; }
+.video-details a { text-decoration: none; color: #000; font-weight: bold; font-size: 1.1em; margin-bottom: 5px; display: block; }
+.video-details a:hover { text-decoration: underline; color: #cc181e; }
+.channel-name { color: #555; font-size: 0.9em; margin-top: auto; }
+.channel-name a { color: #555; text-decoration: none; font-weight: normal; font-size: 1em; display: inline; }
+.channel-name a:hover { text-decoration: underline; }
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+.modal-content { background: #fff; padding: 25px; border-radius: 8px; width: 90%; max-width: 500px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; }
+.modal-close-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5em; color: #666; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
+.modal-close-btn:hover { color: #000; background: #f0f0f0; border-radius: 50%; }
+.modal-content h2 { margin-top: 0; margin-bottom: 15px; font-size: 1.5em; padding-right: 30px; }
+.cached-playlist-list { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; border: 1px solid #eee; border-radius: 4px; }
+.cached-playlist-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #eee; gap: 15px; }
+.cached-playlist-item:last-child { border-bottom: none; }
+.cached-playlist-info { flex-grow: 1; overflow: hidden; }
+.cached-playlist-info strong { font-size: 1.1em; color: #333; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cached-playlist-info span { font-size: 0.9em; color: #666; }
+.delete-cache-btn { width: fit-content; padding: 8px 12px; background-color: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; margin-top: 0; transition: background-color 0.2s; }
+.delete-cache-btn:hover { background-color: #d32f2f; }
+.modal-footer { margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; }
+.clear-all-btn { width: auto; padding: 10px 20px; background-color: #f44336; margin-top: 0; }
+.clear-all-btn:hover { background-color: #d32f2f; }
+.empty-result { text-align: center; padding: 20px; color: #666; font-style: italic; }
+.error-msg { color: #cc181e; }
+.success-msg { color: #2e7d32; }
+.warning-msg { color: #ed6c02; }
