@@ -9,7 +9,7 @@ button:hover { background-color: #a81015; }
 button:disabled { background-color: #ccc; cursor: not-allowed; }
 .checkbox-group { display: flex; align-items: center; margin-top: 10px; gap: 8px; }
 .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; margin: 0; cursor: pointer; }
-.checkbox-group label { margin: 0; display: inline-block; cursor: pointer; user-select: none; }
+.checkbox-group label { margin: 0; display: inline-block; cursor: pointer; -webkit-user-select: none; }
 .search-mode-group { margin-top: 15px; padding: 10px; background: #f9f9f9; border-radius: 6px; border: 1px solid #ddd; }
 .search-mode-group p { margin-top: 0; margin-bottom: 10px; font-weight: bold; }
 .search-mode-group label { display: inline-block; margin-right: 15px; margin-top: 5px; font-weight: normal; cursor: pointer; }
