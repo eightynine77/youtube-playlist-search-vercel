@@ -163,6 +163,10 @@ export default function App() {
   }, []);
 
   const showStatus = (msg, type = 'info') => {
+    if (type !== 'error') {
+      setStatusMessage(''); // Hide message for info/success/warning
+      return;
+    }
     setStatusMessage(msg);
     setStatusType(type);
   };
@@ -182,7 +186,9 @@ export default function App() {
     return {
       items: data.items || [],
       nextPageToken: data.nextPageToken || null,
-      totalResults: data.totalResults || 0
+      totalResults: data.totalResults || 0,
+      playlistTitle: data.playlistTitle || null,
+      channelTitle: data.playlistChannelTitle || null 
     };
   };
 
@@ -239,6 +245,8 @@ export default function App() {
       showStatus('Fetching playlist from YouTube...', 'info');
       let actualNextPageToken = null;
       let totalExpected = meta?.totalResults || 0;
+      let fetchedPlaylistTitle = meta?.playlistTitle || null;
+      let fetchedChannelTitle = meta?.channelTitle || null;
 
       do {
         if (abortRef.current) {
@@ -251,7 +259,17 @@ export default function App() {
         if (pageToken === 'START') {
           totalExpected = result.totalResults;
           setPlaylistTotal(totalExpected);
-          await savePlaylistMeta(db, listId, { fullyCached: false, totalResults: totalExpected });
+          
+          // Use the exact playlist metadata from the API
+          fetchedPlaylistTitle = result.playlistTitle || 'Unknown Title';
+          fetchedChannelTitle = result.channelTitle || 'Unknown Channel';
+
+          await savePlaylistMeta(db, listId, { 
+            fullyCached: false, 
+            totalResults: totalExpected,
+            playlistTitle: fetchedPlaylistTitle,
+            channelTitle: fetchedChannelTitle
+          });
         }
 
         await savePage(db, listId, pageToken, result.items, result.nextPageToken);
@@ -267,8 +285,13 @@ export default function App() {
       } while (actualNextPageToken && !abortRef.current);
 
       if (!abortRef.current) {
-        await savePlaylistMeta(db, listId, { fullyCached: true, totalResults: totalExpected });
-        showStatus('Finished fetching playlist.', 'success');
+        await savePlaylistMeta(db, listId, { 
+          fullyCached: true, 
+          totalResults: totalExpected,
+          playlistTitle: fetchedPlaylistTitle,
+          channelTitle: fetchedChannelTitle
+        });
+        showStatus('', 'success');
       }
 
     } catch (err) {
@@ -285,6 +308,7 @@ export default function App() {
   };
 
   // --- MODAL & CACHE MANAGEMENT ---
+  
   const loadModalData = async () => {
     try {
       const db = await openDB();
@@ -352,24 +376,53 @@ export default function App() {
         </div>
       </form>
 
-      <p id="counterText">{counterText} {filteredItems.length !== allItems.length && `(Filtered: ${filteredItems.length})`}</p>
+      <p id="counterText">
+        {isSearching ? (
+          allItems.length === 0 ? counterText : (
+            playlistTotal && Number.isFinite(playlistTotal) 
+              ? `Searching ${allItems.length} of ${playlistTotal} videos` 
+              : `Searching ${allItems.length} videos...`
+          )
+        ) : (
+          allItems.length > 0 ? `Done — searched ${allItems.length} videos | ${filteredItems.length} videos found` : ''
+        )}
+      </p>
       <p id="statusMessage" className={`${statusType}-msg`}>{statusMessage}</p>
 
       <ul id="results" className="video-list">
         {filteredItems.map((item, idx) => (
           <li key={`${item.videoId}-${idx}`} className="video-item">
-            {item.thumbnailUrl && <img src={item.thumbnailUrl} alt={item.title} />}
-            <div className="video-details">
-              {item.videoUrl ? <a href={item.videoUrl} target="_blank" rel="noopener noreferrer">{item.title}</a> : <strong>{item.title}</strong>}
-              <span className="channel-name">Channel: {item.channelHandle ? <a href={`https://www.youtube.com/${item.channelHandle}`} target="_blank" rel="noopener noreferrer">{item.channelTitle} ({item.channelHandle})</a> : <span>{item.channelTitle}</span>}</span>
+            {item.thumbnailUrl && <img src={item.thumbnailUrl} alt={item.title} loading="lazy" />}
+            
+            <div className="video-info">
+              {item.videoUrl ? (
+                <a href={item.videoUrl} target="_blank" rel="noopener noreferrer">{item.title}</a>
+              ) : (
+                <strong>{item.title}</strong>
+              )}
+              
+              <div className="channel-info-container">
+                <span className="youtube-channel-text">youtube channel: </span>
+                {item.channelId ? (
+                  <a href={`https://www.youtube.com/channel/${item.channelId}`} className="channel-link" target="_blank" rel="noopener noreferrer">
+                    {item.channelTitle}
+                  </a>
+                ) : (
+                  <span className="channel-name">{item.channelTitle}</span>
+                )}
+                
+                {item.channelHandle && (
+                  <> — <a href={`https://www.youtube.com/${item.channelHandle}`} className="channel-link" target="_blank" rel="noopener noreferrer">{item.channelHandle}</a></>
+                )}
+              </div>
             </div>
           </li>
         ))}
       </ul>
 
       {isModalOpen && (
-        <div id="cacheModal" className="modal-overlay">
-          <div className="modal-content">
+        <div id="cacheModal" className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <button id="closeModalBtn" className="modal-close-btn" onClick={() => setIsModalOpen(false)}>&times;</button>
             <h2>Cached Playlists</h2>
             <p>You can clear the cache for individual playlists here.</p>
@@ -380,8 +433,9 @@ export default function App() {
                 cachedPlaylists.map(list => (
                   <li key={list.playlistId} className="cached-playlist-item">
                     <div className="cached-playlist-info">
-                      <strong>{list.playlistId}</strong>
-                      <span>{list.totalResults ? `${list.totalResults} videos` : 'Partial cache'} &nbsp;&bull; {new Date(list.lastUpdated).toLocaleDateString()}</span>
+                      <strong>{list.playlistTitle || 'Unknown Title'}</strong>
+                      <span>By: {list.channelTitle || 'Unknown Channel'}</span>
+                      <span className="playlist-url">https://www.youtube.com/playlist?list={list.playlistId}</span>
                     </div>
                     <button className="delete-cache-btn" onClick={() => handleDeleteCache(list.playlistId)}>Delete</button>
                   </li>
