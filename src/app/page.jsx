@@ -136,6 +136,10 @@ export default function App() {
   const [wholeWordMatch, setWholeWordMatch] = useState(false);
   const [searchMode, setSearchMode] = useState('title');
 
+  const [activeSearchTerm, setActiveSearchTerm] = useState('');
+  const [activeWholeWordMatch, setActiveWholeWordMatch] = useState(false);
+  const [activeSearchMode, setActiveSearchMode] = useState('title');
+
   const [allItems, setAllItems] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
@@ -196,6 +200,10 @@ export default function App() {
   const handleSearch = async (e) => {
     e.preventDefault();
     abortRef.current = false;
+
+    setActiveSearchTerm(searchTerm);
+    setActiveWholeWordMatch(wholeWordMatch);
+    setActiveSearchMode(searchMode);
     
     const listId = extractPlaylistId(playlistUrl);
     if (!listId) {
@@ -340,9 +348,10 @@ export default function App() {
     } catch (e) { alert("Failed to clear cache."); }
   };
 
+  // Change this block:
   const filteredItems = useMemo(() => {
-    return filterItems(allItems, searchTerm, wholeWordMatch, searchMode);
-  }, [allItems, searchTerm, wholeWordMatch, searchMode]);
+    return filterItems(allItems, activeSearchTerm, activeWholeWordMatch, activeSearchMode);
+  }, [allItems, activeSearchTerm, activeWholeWordMatch, activeSearchMode]);
 
   return (
     <div className="container">
