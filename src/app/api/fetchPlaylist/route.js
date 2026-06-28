@@ -45,6 +45,25 @@ export async function GET(request) {
     url += `&pageToken=${pageToken}`;
   }
 
+  let playlistTitle = null;
+  let playlistChannelTitle = null;
+
+  // Only fetch the playlist name on the first page load
+  if (!pageToken || pageToken === 'START') {
+    const playlistApiUrl = `https://www.googleapis.com/youtube/v3/playlists?part=snippet&id=${playlistId}&key=${API_KEY}`;
+    try {
+      const playlistResp = await fetch(playlistApiUrl);
+      const playlistData = await playlistResp.json();
+      
+      if (playlistData.items && playlistData.items.length > 0) {
+        playlistTitle = playlistData.items[0].snippet?.title || null;
+        playlistChannelTitle = playlistData.items[0].snippet?.channelTitle || null;
+      }
+    } catch (err) {
+      console.error("Error fetching playlist metadata:", err);
+    }
+  }
+
   try {
     const res = await fetch(url);
     const data = await res.json();
@@ -77,7 +96,9 @@ export async function GET(request) {
     return NextResponse.json({
       items,
       nextPageToken: data.nextPageToken || null,
-      totalResults: data.pageInfo?.totalResults || 0
+      totalResults: data.pageInfo?.totalResults || 0,
+      playlistTitle: playlistTitle,
+      playlistChannelTitle: playlistChannelTitle
     });
 
   } catch (error) {
