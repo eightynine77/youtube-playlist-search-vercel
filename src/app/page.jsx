@@ -175,27 +175,6 @@ export default function App() {
     setStatusType(type);
   };
 
-  // --- SECURE API FETCHING (Calls the route.js backend) ---
-  const fetchYouTubeData = async (listId, pageToken) => {
-    let url = `/api/fetchPlaylist?playlistId=${listId}`;
-    if (pageToken && pageToken !== 'START') url += `&pageToken=${pageToken}`;
-
-    const res = await fetch(url);
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.error || `Server Error ${res.status}`);
-    }
-
-    return {
-      items: data.items || [],
-      nextPageToken: data.nextPageToken || null,
-      totalResults: data.totalResults || 0,
-      playlistTitle: data.playlistTitle || null,
-      channelTitle: data.playlistChannelTitle || null 
-    };
-  };
-
   // --- MAIN SEARCH & CACHE LOGIC ---
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -249,48 +228,68 @@ export default function App() {
         return;
       }
 
-      // 2. FETCH FROM NEXT.JS BACKEND
+      // 2. FETCH FROM NEXT.JS BACKEND (STREAMING)
       showStatus('Fetching playlist from YouTube...', 'info');
-      let actualNextPageToken = null;
       let totalExpected = meta?.totalResults || 0;
       let fetchedPlaylistTitle = meta?.playlistTitle || null;
       let fetchedChannelTitle = meta?.channelTitle || null;
+      let currentPageToken = 'START';
 
-      do {
+      // Open a single connection to the server
+      const response = await fetch(`/api/fetchPlaylist?playlistId=${listId}`);
+      if (!response.ok) throw new Error(`Server Error: ${response.status}`);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let partialLine = '';
+
+      while (true) {
         if (abortRef.current) {
+          reader.cancel();
           showStatus('Search stopped by user.', 'warning');
           break;
         }
 
-        const result = await fetchYouTubeData(listId, pageToken);
-        
-        if (pageToken === 'START') {
-          totalExpected = result.totalResults;
-          setPlaylistTotal(totalExpected);
+        // Read the stream chunk by chunk as Vercel pushes it
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunkText = decoder.decode(value, { stream: true });
+        const lines = (partialLine + chunkText).split('\n');
+        partialLine = lines.pop(); // Save incomplete line for next iteration
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
           
-          // Use the exact playlist metadata from the API
-          fetchedPlaylistTitle = result.playlistTitle || 'Unknown Title';
-          fetchedChannelTitle = result.channelTitle || 'Unknown Channel';
+          const result = JSON.parse(line);
+          if (result.error) throw new Error(result.error);
 
-          await savePlaylistMeta(db, listId, { 
-            fullyCached: false, 
-            totalResults: totalExpected,
-            playlistTitle: fetchedPlaylistTitle,
-            channelTitle: fetchedChannelTitle
-          });
+          // Update metadata only on the first chunk
+          if (currentPageToken === 'START') {
+            totalExpected = result.totalResults || 0;
+            setPlaylistTotal(totalExpected);
+            fetchedPlaylistTitle = result.playlistTitle || 'Unknown Title';
+            fetchedChannelTitle = result.playlistChannelTitle || 'Unknown Channel';
+
+            await savePlaylistMeta(db, listId, { 
+              fullyCached: false, 
+              totalResults: totalExpected,
+              playlistTitle: fetchedPlaylistTitle,
+              channelTitle: fetchedChannelTitle
+            });
+          }
+
+          // Save the current chunk to IndexedDB cache
+          await savePage(db, listId, currentPageToken, result.items, result.nextPageToken);
+          currentPageToken = result.nextPageToken;
+
+          // Update the UI state instantly
+          fetchedItemsAccumulator = [...fetchedItemsAccumulator, ...result.items];
+          loadedItemsCount = fetchedItemsAccumulator.length;
+          setAllItems([...fetchedItemsAccumulator]);
+          setCounterText(`Fetched ${loadedItemsCount} / ${totalExpected} videos...`);
         }
-
-        await savePage(db, listId, pageToken, result.items, result.nextPageToken);
-        
-        fetchedItemsAccumulator = [...fetchedItemsAccumulator, ...result.items];
-        loadedItemsCount = fetchedItemsAccumulator.length;
-        setAllItems([...fetchedItemsAccumulator]);
-        setCounterText(`Fetched ${loadedItemsCount} / ${totalExpected} videos...`);
-
-        actualNextPageToken = result.nextPageToken;
-        pageToken = actualNextPageToken;
-
-      } while (actualNextPageToken && !abortRef.current);
+      }
 
       if (!abortRef.current) {
         await savePlaylistMeta(db, listId, { 
