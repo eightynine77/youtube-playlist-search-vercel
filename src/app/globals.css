@@ -133,6 +133,14 @@ button:disabled { background-color: #ccc; cursor: not-allowed; }
   margin-top: 1em; 
 }
 
+.search-filter-info{
+  margin-top: 3px;
+  font-style: italic;
+  font-size: 15px;
+  color: #a31013;
+  font-family: monospace;
+}
+
 /* Responsive desktop layout for video items */
 @media (min-width: 600px) {
   .video-item {

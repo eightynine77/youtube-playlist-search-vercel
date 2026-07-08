@@ -382,7 +382,8 @@ export default function App() {
         <input type="text" id="playlistUrl" placeholder="Paste playlist URL" required autoFocus tabIndex="1" value={playlistUrl} onChange={(e) => setPlaylistUrl(e.target.value)} />
         
         <label htmlFor="searchTerm">Search Term:</label>
-        <input type="text" id="searchTerm" placeholder={searchPlaceholders[searchMode]} tabIndex="2" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        <input type="text" id="searchTerm" placeholder="enter your search here" tabIndex="2" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        <p className="search-filter-info">{searchPlaceholders[searchMode]}</p>
         
         <div className="checkbox-group">
           <input type="checkbox" id="wholeWordMatch" tabIndex="3" checked={wholeWordMatch} onChange={(e) => setWholeWordMatch(e.target.checked)} />
