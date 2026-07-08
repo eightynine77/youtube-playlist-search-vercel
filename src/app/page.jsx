@@ -23,7 +23,19 @@ function filterItems(items, searchTerm, wholeWordOnly, searchMode) {
       case 'title': return checkMatch(item.title, searchTerm, wholeWordOnly);
       case 'description': return checkMatch(item.description, searchTerm, wholeWordOnly);
       case 'both': return checkMatch(item.title, searchTerm, wholeWordOnly) || checkMatch(item.description, searchTerm, wholeWordOnly);
-      case 'channel': return checkMatch(item.channelTitle, searchTerm, wholeWordOnly);
+      case 'channel': {
+        // 1. Check if the standard channel name matches
+        const matchName = checkMatch(item.channelTitle, searchTerm, wholeWordOnly);
+        
+        // 2. Normalize the handle and search term by stripping any starting '@'
+        const cleanHandle = item.channelHandle ? item.channelHandle.replace(/^@/, '') : '';
+        const cleanSearch = searchTerm.replace(/^@/, '');
+        
+        // 3. Check if the cleaned handle matches the cleaned search term
+        const matchHandle = checkMatch(cleanHandle, cleanSearch, wholeWordOnly);
+        
+        return matchName || matchHandle;
+      }
       default: return checkMatch(item.title, searchTerm, wholeWordOnly);
     }
   });
@@ -352,6 +364,13 @@ export default function App() {
     return filterItems(allItems, activeSearchTerm, activeWholeWordMatch, activeSearchMode);
   }, [allItems, activeSearchTerm, activeWholeWordMatch, activeSearchMode]);
 
+  const searchPlaceholders = {
+  title: "Search videos by title",
+  description: "Search videos by description",
+  both: "Search videos by both title and description",
+  channel: "Search videos by channel name or @handle",
+  };
+
   return (
     <div className="container">
       
@@ -363,7 +382,7 @@ export default function App() {
         <input type="text" id="playlistUrl" placeholder="Paste playlist URL" required autoFocus tabIndex="1" value={playlistUrl} onChange={(e) => setPlaylistUrl(e.target.value)} />
         
         <label htmlFor="searchTerm">Search Term:</label>
-        <input type="text" id="searchTerm" placeholder="Search videos by title" tabIndex="2" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        <input type="text" id="searchTerm" placeholder={searchPlaceholders[searchMode]} tabIndex="2" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         
         <div className="checkbox-group">
           <input type="checkbox" id="wholeWordMatch" tabIndex="3" checked={wholeWordMatch} onChange={(e) => setWholeWordMatch(e.target.checked)} />
