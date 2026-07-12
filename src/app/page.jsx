@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Virtuoso } from 'react-virtuoso';
 
 // ============================================================================
 // FILTER LOGIC
@@ -138,6 +139,43 @@ function extractPlaylistId(url) {
     return null;
   }
 }
+
+// ============================================================================
+// MEMOIZED ROW COMPONENT
+// ============================================================================
+const VideoRow = React.memo(({ item }) => {
+  return (
+    <div className="video-item">
+      {item.thumbnailUrl && <img src={item.thumbnailUrl} alt={item.title} loading="lazy" />}
+      
+      <div className="video-info">
+        {item.videoUrl ? (
+          <a href={item.videoUrl} target="_blank" rel="noopener noreferrer">{item.title}</a>
+        ) : (
+          <strong>{item.title}</strong>
+        )}
+        
+        <div className="channel-info-container">
+          <span className="youtube-channel-text">youtube channel: </span>
+          {item.channelId ? (
+            <a href={`https://www.youtube.com/channel/${item.channelId}`} className="channel-link" target="_blank" rel="noopener noreferrer">
+              {item.channelTitle}
+            </a>
+          ) : (
+            <span className="channel-name">{item.channelTitle}</span>
+          )}
+          
+          {item.channelHandle && (
+            <> — <a href={`https://www.youtube.com/${item.channelHandle}`} className="channel-link" target="_blank" rel="noopener noreferrer">{item.channelHandle}</a></>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+});
+
+// Setting a display name is good practice for React DevTools
+VideoRow.displayName = 'VideoRow';
 
 // ============================================================================
 // MAIN REACT COMPONENT
@@ -417,36 +455,13 @@ export default function App() {
       </p>
       <p id="statusMessage" className={`${statusType}-msg`}>{statusMessage}</p>
 
-      <ul id="results" className="video-list">
-        {filteredItems.map((item, idx) => (
-          <li key={`${item.videoId}-${idx}`} className="video-item">
-            {item.thumbnailUrl && <img src={item.thumbnailUrl} alt={item.title} loading="lazy" />}
-            
-            <div className="video-info">
-              {item.videoUrl ? (
-                <a href={item.videoUrl} target="_blank" rel="noopener noreferrer">{item.title}</a>
-              ) : (
-                <strong>{item.title}</strong>
-              )}
-              
-              <div className="channel-info-container">
-                <span className="youtube-channel-text">youtube channel: </span>
-                {item.channelId ? (
-                  <a href={`https://www.youtube.com/channel/${item.channelId}`} className="channel-link" target="_blank" rel="noopener noreferrer">
-                    {item.channelTitle}
-                  </a>
-                ) : (
-                  <span className="channel-name">{item.channelTitle}</span>
-                )}
-                
-                {item.channelHandle && (
-                  <> — <a href={`https://www.youtube.com/${item.channelHandle}`} className="channel-link" target="_blank" rel="noopener noreferrer">{item.channelHandle}</a></>
-                )}
-              </div>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <div id="results" className="video-list">
+        <Virtuoso
+          useWindowScroll
+          data={filteredItems}
+          itemContent={(index, item) => <VideoRow item={item} />}
+        />
+      </div>
 
       {isModalOpen && (
         <div id="cacheModal" className="modal-overlay" onClick={() => setIsModalOpen(false)}>
