@@ -132,10 +132,15 @@ async function clearEntireCache(db) {
 function extractPlaylistId(url) {
   try {
     if (!url || typeof url !== 'string') return null;
+    // If it looks like a direct ID instead of a full URL, return it directly
+    if (!url.includes('youtube.com') && !url.includes('http')) {
+      return url.trim();
+    }
     const parsedUrl = new URL(url);
     if (!parsedUrl.hostname.includes('youtube.com')) return null;
     return parsedUrl.searchParams.get("list");
   } catch (e) {
+    if (url && typeof url === 'string' && !url.includes('.')) return url.trim();
     return null;
   }
 }
@@ -216,6 +221,44 @@ export default function App() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // URL Parameter Detection and Auto-Search on Mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const paramPlaylistId = params.get('playlistId');
+    const paramQ = params.get('q');
+    const paramCheckbox = params.get('checkbox');
+    const paramSearchBy = params.get('searchby');
+
+    if (paramPlaylistId) {
+      // Map URL variants back to your internal application searchMode states
+      let internalSearchMode = 'title';
+      if (paramSearchBy === 'titleAndDesc') internalSearchMode = 'both';
+      if (paramSearchBy === 'desc') internalSearchMode = 'description';
+      if (paramSearchBy === 'channel') internalSearchMode = 'channel';
+
+      const isChecked = paramCheckbox === 'true';
+
+      // Reconstruct the full URL if it's just an ID
+      const fullPlaylistUrl = paramPlaylistId.startsWith('http') 
+        ? paramPlaylistId 
+        : `https://www.youtube.com/playlist?list=${paramPlaylistId}`;
+
+      // Update interactive states so element values visibly sync up
+      setPlaylistUrl(fullPlaylistUrl);
+      if (paramQ) setSearchTerm(paramQ);
+      setWholeWordMatch(isChecked);
+      setSearchMode(internalSearchMode);
+
+      // Execute auto-search with parsed parameters
+      handleSearch(null, {
+        playlistUrl: fullPlaylistUrl,
+        searchTerm: paramQ || '',
+        wholeWordMatch: isChecked,
+        searchMode: internalSearchMode
+      });
+    }
+  }, []);
+
   const showStatus = (msg, type = 'info') => {
     if (type !== 'error') {
       setStatusMessage(''); // Hide message for info/success/warning
@@ -226,18 +269,41 @@ export default function App() {
   };
 
   // --- MAIN SEARCH & CACHE LOGIC ---
-  const handleSearch = async (e) => {
-    e.preventDefault();
+  const handleSearch = async (e, overrideParams = null) => {
+    if (e) e.preventDefault();
     abortRef.current = false;
 
-    setActiveSearchTerm(searchTerm);
-    setActiveWholeWordMatch(wholeWordMatch);
-    setActiveSearchMode(searchMode);
+    // Use URL parameters if overriding on page load, otherwise fall back to standard element states
+    const currentPlaylistUrl = overrideParams ? overrideParams.playlistUrl : playlistUrl;
+    const currentSearchTerm = overrideParams ? overrideParams.searchTerm : searchTerm;
+    const currentWholeWordMatch = overrideParams ? overrideParams.wholeWordMatch : wholeWordMatch;
+    const currentSearchMode = overrideParams ? overrideParams.searchMode : searchMode;
+
+    setActiveSearchTerm(currentSearchTerm);
+    setActiveWholeWordMatch(currentWholeWordMatch);
+    setActiveSearchMode(currentSearchMode);
     
-    const listId = extractPlaylistId(playlistUrl);
+    const listId = extractPlaylistId(currentPlaylistUrl);
     if (!listId) {
       showStatus('Invalid YouTube Playlist URL', 'error');
       return;
+    }
+
+    // ONLY update the browser URL if the search was manually triggered by clicking the search button
+    if (!overrideParams) {
+      const params = new URLSearchParams();
+      if (currentPlaylistUrl) params.set('playlistId', listId);
+      if (currentSearchTerm) params.set('q', currentSearchTerm);
+      if (currentWholeWordMatch) params.set('checkbox', 'true');
+      
+      // Map internal search modes back to your requested URL parameter variants
+      let urlSearchBy = 'title';
+      if (currentSearchMode === 'both') urlSearchBy = 'titleAndDesc';
+      if (currentSearchMode === 'description') urlSearchBy = 'desc';
+      if (currentSearchMode === 'channel') urlSearchBy = 'channel';
+      params.set('searchby', urlSearchBy);
+
+      window.history.pushState(null, '', `${window.location.pathname}?${params.toString()}`);
     }
 
     setIsSearching(true);
@@ -257,6 +323,10 @@ export default function App() {
       if (meta && meta.fullyCached) {
         showStatus('Loading from cache...', 'info');
         setPlaylistTotal(meta.totalResults);
+
+        // Update document title from cache
+        const queryStr = currentSearchTerm ? `search: ${currentSearchTerm} | ` : '';
+        document.title = `${queryStr}playlist: ${meta.playlistTitle || 'Unknown Title'} | youtube playlist search`;
         
         while (pageToken) {
           if (abortRef.current) break;
@@ -320,6 +390,10 @@ export default function App() {
             setPlaylistTotal(totalExpected);
             fetchedPlaylistTitle = result.playlistTitle || 'Unknown Title';
             fetchedChannelTitle = result.playlistChannelTitle || 'Unknown Channel';
+
+            // Update document title from stream
+            const queryStr = currentSearchTerm ? `search: ${currentSearchTerm} | ` : '';
+            document.title = `${queryStr}playlist: ${fetchedPlaylistTitle} | youtube playlist search`;
 
             await savePlaylistMeta(db, listId, { 
               fullyCached: false, 
