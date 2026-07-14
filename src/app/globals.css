@@ -39,7 +39,7 @@ button:hover {
   background-color: #a31013; 
 }
 
-button:disabled { background-color: #ccc; cursor: not-allowed; }
+button:disabled { background-color: #797979; cursor: not-allowed; color: white;}
 .checkbox-group { display: flex; align-items: center; margin-top: 10px; gap: 8px; }
 .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; margin: 0; cursor: pointer; }
 .checkbox-group label { margin: 0; display: inline-block; cursor: pointer; -webkit-user-select: none; }
