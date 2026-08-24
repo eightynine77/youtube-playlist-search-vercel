@@ -91,6 +91,8 @@ button:disabled { background-color: #797979; cursor: not-allowed; color: white;}
   width: 100%;
   max-width: 300px;
   height: auto;
+  aspect-ratio: 16 / 9; /* Reserves space for standard YouTube thumbnails */
+  background-color: #e0e0e0; /* Optional: Shows a grey placeholder while loading */
   object-fit: cover;
   margin-bottom: 10px;
   border-radius: 4px;
