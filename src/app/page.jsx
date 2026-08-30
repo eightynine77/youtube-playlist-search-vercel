@@ -151,7 +151,9 @@ function extractPlaylistId(url) {
 const VideoRow = React.memo(({ item }) => {
   return (
     <div className="video-item">
-      {item.thumbnailUrl && <img src={item.thumbnailUrl} alt={item.title} loading="lazy" />}
+      <div className="thumbnail-container">
+        {item.thumbnailUrl && <img src={item.thumbnailUrl} alt={item.title} loading="lazy" />}
+      </div>
       
       <div className="video-info">
         {item.videoUrl ? (
