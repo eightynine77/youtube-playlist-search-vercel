@@ -203,6 +203,8 @@ export default function App() {
   const [statusType, setStatusType] = useState('info'); 
   const [counterText, setCounterText] = useState('');
   const [playlistTotal, setPlaylistTotal] = useState(null);
+
+  const [isCachedSearch, setIsCachedSearch] = useState(false);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [cachedPlaylists, setCachedPlaylists] = useState([]);
@@ -310,6 +312,7 @@ export default function App() {
 
     setIsSearching(true);
     setAllItems([]);
+    setIsCachedSearch(false); // Reset this for every new search
     setCounterText('Checking cache...');
     showStatus('');
     setPlaylistTotal(null);
@@ -323,6 +326,7 @@ export default function App() {
 
       // 1. CHECK CACHE
       if (meta && meta.fullyCached) {
+        setIsCachedSearch(true); // Tell the app we are using cached data
         showStatus('Loading from cache...', 'info');
         setPlaylistTotal(meta.totalResults);
 
@@ -532,11 +536,19 @@ export default function App() {
       <p id="statusMessage" className={`${statusType}-msg`}>{statusMessage}</p>
 
       <div id="results" className="video-list">
-        <Virtuoso
-          useWindowScroll
-          data={filteredItems}
-          itemContent={(index, item) => <VideoRow item={item} />}
-        />
+        {isCachedSearch ? (
+          /* Render a native list for cached items */
+          filteredItems.map((item, index) => (
+            <VideoRow key={`${item.videoId || index}`} item={item} />
+          ))
+        ) : (
+          /* Render Virtuoso for streaming network items */
+          <Virtuoso
+            useWindowScroll
+            data={filteredItems}
+            itemContent={(index, item) => <VideoRow item={item} />}
+          />
+        )}
       </div>
 
       {isModalOpen && (
