@@ -150,6 +150,11 @@ button:disabled { background-color: #797979; cursor: not-allowed; color: white;}
   font-family: monospace;
 }
 
+.code-text {
+  font-family: monospace;
+  overflow-wrap: break-word;
+}
+
 /* Responsive desktop layout for video items */
 @media (min-width: 600px) {
   .video-item {

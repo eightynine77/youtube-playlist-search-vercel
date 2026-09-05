@@ -17,24 +17,50 @@ function checkMatch(text, term, wholeWord) {
   }
 }
 
-function filterItems(items, searchTerm, wholeWordOnly, searchMode) {
+function filterItems(items, searchTerm, wholeWordOnly, searchMode, isOperatorMode) {
   if (!searchTerm) return items;
+
+  if (isOperatorMode) {
+    const operatorRegex = /(title|desc|channel):(?:"([^"]+)"|([^\s]+))/gi;
+    const matches = [...searchTerm.matchAll(operatorRegex)];
+
+    if (matches.length > 0) {
+      return items.filter(item => {
+        // Must match ALL detected operators
+        return matches.every(match => {
+          const field = match[1].toLowerCase();
+          const term = match[2] || match[3];
+
+          if (field === 'title') {
+            return checkMatch(item.title, term, wholeWordOnly);
+          } else if (field === 'desc') {
+            return checkMatch(item.description, term, wholeWordOnly);
+          } else if (field === 'channel') {
+            // Channel logic: Match name OR handle
+            const matchName = checkMatch(item.channelTitle, term, wholeWordOnly);
+            const cleanHandle = item.channelHandle ? item.channelHandle.replace(/^@/, '') : '';
+            const cleanSearch = term.replace(/^@/, '');
+            const matchHandle = checkMatch(cleanHandle, cleanSearch, wholeWordOnly);
+            
+            return matchName || matchHandle;
+          }
+          return true;
+        });
+      });
+    }
+  }
+
+  // Standard mode: Fallback to radio buttons and whole word logic
   return items.filter(item => {
     switch (searchMode) {
       case 'title': return checkMatch(item.title, searchTerm, wholeWordOnly);
       case 'description': return checkMatch(item.description, searchTerm, wholeWordOnly);
       case 'both': return checkMatch(item.title, searchTerm, wholeWordOnly) || checkMatch(item.description, searchTerm, wholeWordOnly);
       case 'channel': {
-        // 1. Check if the standard channel name matches
         const matchName = checkMatch(item.channelTitle, searchTerm, wholeWordOnly);
-        
-        // 2. Normalize the handle and search term by stripping any starting '@'
         const cleanHandle = item.channelHandle ? item.channelHandle.replace(/^@/, '') : '';
         const cleanSearch = searchTerm.replace(/^@/, '');
-        
-        // 3. Check if the cleaned handle matches the cleaned search term
         const matchHandle = checkMatch(cleanHandle, cleanSearch, wholeWordOnly);
-        
         return matchName || matchHandle;
       }
       default: return checkMatch(item.title, searchTerm, wholeWordOnly);
@@ -196,6 +222,7 @@ export default function App() {
   const [activeSearchTerm, setActiveSearchTerm] = useState('');
   const [activeWholeWordMatch, setActiveWholeWordMatch] = useState(false);
   const [activeSearchMode, setActiveSearchMode] = useState('title');
+  const [activeIsOperatorMode, setActiveIsOperatorMode] = useState(false);
 
   const [allItems, setAllItems] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -207,6 +234,7 @@ export default function App() {
   const [isCachedSearch, setIsCachedSearch] = useState(false);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [cachedPlaylists, setCachedPlaylists] = useState([]);
 
   const abortRef = useRef(false);
@@ -232,15 +260,20 @@ export default function App() {
     const paramQ = params.get('q');
     const paramCheckbox = params.get('checkbox');
     const paramSearchBy = params.get('searchby');
+    const paramSearchOperator = params.get('searchOperator');
 
     if (paramPlaylistId) {
-      // Map URL variants back to your internal application searchMode states
+      // Default to standard internal application searchMode states
       let internalSearchMode = 'title';
-      if (paramSearchBy === 'titleAndDesc') internalSearchMode = 'both';
-      if (paramSearchBy === 'desc') internalSearchMode = 'description';
-      if (paramSearchBy === 'channel') internalSearchMode = 'channel';
+      const isChecked = paramCheckbox === 'true'; // Extracted outside!
+      const isOperatorMode = paramSearchOperator === 'true';
 
-      const isChecked = paramCheckbox === 'true';
+      // Only map searchby parameters if searchOperator is not strictly 'true'
+      if (!isOperatorMode) {
+        if (paramSearchBy === 'titleAndDesc') internalSearchMode = 'both';
+        if (paramSearchBy === 'desc') internalSearchMode = 'description';
+        if (paramSearchBy === 'channel') internalSearchMode = 'channel';
+      }
 
       // Reconstruct the full URL if it's just an ID
       const fullPlaylistUrl = paramPlaylistId.startsWith('http') 
@@ -251,14 +284,15 @@ export default function App() {
       setPlaylistUrl(fullPlaylistUrl);
       if (paramQ) setSearchTerm(paramQ);
       setWholeWordMatch(isChecked);
-      setSearchMode(internalSearchMode);
+      if (!isOperatorMode) setSearchMode(internalSearchMode);
 
       // Execute auto-search with parsed parameters
       handleSearch(null, {
         playlistUrl: fullPlaylistUrl,
         searchTerm: paramQ || '',
         wholeWordMatch: isChecked,
-        searchMode: internalSearchMode
+        searchMode: internalSearchMode,
+        isOperatorMode: isOperatorMode // Pass it here
       });
     }
   }, []);
@@ -277,37 +311,47 @@ export default function App() {
     if (e) e.preventDefault();
     abortRef.current = false;
 
-    // Use URL parameters if overriding on page load, otherwise fall back to standard element states
-    const currentPlaylistUrl = overrideParams ? overrideParams.playlistUrl : playlistUrl;
-    const currentSearchTerm = overrideParams ? overrideParams.searchTerm : searchTerm;
-    const currentWholeWordMatch = overrideParams ? overrideParams.wholeWordMatch : wholeWordMatch;
-    const currentSearchMode = overrideParams ? overrideParams.searchMode : searchMode;
-
-    setActiveSearchTerm(currentSearchTerm);
-    setActiveWholeWordMatch(currentWholeWordMatch);
-    setActiveSearchMode(currentSearchMode);
+      // Use URL parameters if overriding on page load, otherwise fall back to standard element states
+      const currentPlaylistUrl = overrideParams ? overrideParams.playlistUrl : playlistUrl;
+      const currentSearchTerm = overrideParams ? overrideParams.searchTerm : searchTerm;
+      const currentWholeWordMatch = overrideParams ? overrideParams.wholeWordMatch : wholeWordMatch;
+      const currentSearchMode = overrideParams ? overrideParams.searchMode : searchMode;
     
-    const listId = extractPlaylistId(currentPlaylistUrl);
-    if (!listId) {
-      showStatus('Invalid YouTube Playlist URL', 'error');
-      return;
-    }
+      const operatorRegex = /(title|desc|channel):(?:"([^"]+)"|([^\s]+))/gi;
+      const currentIsOperatorMode = overrideParams && overrideParams.isOperatorMode !== undefined 
+        ? overrideParams.isOperatorMode 
+        : operatorRegex.test(currentSearchTerm);
 
-    // ONLY update the browser URL if the search was manually triggered by clicking the search button
-    if (!overrideParams) {
-      const params = new URLSearchParams();
-      if (currentPlaylistUrl) params.set('playlistId', listId);
-      if (currentSearchTerm) params.set('q', currentSearchTerm);
-      if (currentWholeWordMatch) params.set('checkbox', 'true');
-      
-      // Map internal search modes back to your requested URL parameter variants
-      let urlSearchBy = 'title';
-      if (currentSearchMode === 'both') urlSearchBy = 'titleAndDesc';
-      if (currentSearchMode === 'description') urlSearchBy = 'desc';
-      if (currentSearchMode === 'channel') urlSearchBy = 'channel';
-      params.set('searchby', urlSearchBy);
+      setActiveSearchTerm(currentSearchTerm);
+      setActiveWholeWordMatch(currentWholeWordMatch);
+      setActiveSearchMode(currentSearchMode);
+      setActiveIsOperatorMode(currentIsOperatorMode); // Save the active state here
+    
+      const listId = extractPlaylistId(currentPlaylistUrl);
+      if (!listId) {
+        showStatus('Invalid YouTube Playlist URL', 'error');
+        return;
+      }
 
-      window.history.pushState(null, '', `${window.location.pathname}?${params.toString()}`);
+      // ONLY update the browser URL if the search was manually triggered by clicking the search button
+      if (!overrideParams) {
+        const params = new URLSearchParams();
+        if (currentPlaylistUrl) params.set('playlistId', listId);
+        if (currentSearchTerm) params.set('q', currentSearchTerm);
+        if (currentWholeWordMatch) params.set('checkbox', 'true'); // Moved out of the else block!
+
+        if (currentIsOperatorMode) {
+          params.set('searchOperator', 'true');
+        } else {
+          // Map internal search modes back to your requested URL parameter variants
+          let urlSearchBy = 'title';
+          if (currentSearchMode === 'both') urlSearchBy = 'titleAndDesc';
+          if (currentSearchMode === 'description') urlSearchBy = 'desc';
+          if (currentSearchMode === 'channel') urlSearchBy = 'channel';
+          params.set('searchby', urlSearchBy);
+        }
+
+        window.history.pushState(null, '', `${window.location.pathname}?${params.toString()}`);
     }
 
     setIsSearching(true);
@@ -479,8 +523,8 @@ export default function App() {
 
   // Change this block:
   const filteredItems = useMemo(() => {
-    return filterItems(allItems, activeSearchTerm, activeWholeWordMatch, activeSearchMode);
-  }, [allItems, activeSearchTerm, activeWholeWordMatch, activeSearchMode]);
+    return filterItems(allItems, activeSearchTerm, activeWholeWordMatch, activeSearchMode, activeIsOperatorMode);
+  }, [allItems, activeSearchTerm, activeWholeWordMatch, activeSearchMode, activeIsOperatorMode]);
 
   const searchPlaceholders = {
   title: "Search videos by title",
@@ -492,7 +536,10 @@ export default function App() {
   return (
     <div className="container">
       
-      <a href="#" id="clearCacheLink" tabIndex="10" onClick={handleOpenModal}><b>clear cache</b></a>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '17px' }}>
+        <a href="#" id="clearCacheLink" tabIndex="10" onClick={handleOpenModal}><b>clear cache</b></a>
+        <a href="#" id="helpLink" tabIndex="11" onClick={(e) => { e.preventDefault(); setIsHelpModalOpen(true); }}><b>help</b></a>
+      </div>
       <h1>youtube playlist video search</h1>
 
       <form id="searchForm" onSubmit={handleSearch}>
@@ -574,6 +621,36 @@ export default function App() {
               )}
             </ul>
             <div className="modal-footer"><button id="clearAllCacheBtn" className="clear-all-btn" onClick={handleClearAllCache} disabled={cachedPlaylists.length === 0}>Clear Entire Cache</button></div>
+          </div>
+        </div>
+      )}
+
+      {isHelpModalOpen && (
+        <div id="helpModal" className="modal-overlay" onClick={() => setIsHelpModalOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ overflowY: 'auto' }}>
+            <button className="modal-close-btn" onClick={() => setIsHelpModalOpen(false)}>&times;</button>
+            <h2>search operators guide</h2>
+            <p>you can use advanced search operators to filter videos specifically by their title, description, or channel. When you use these, the standard radio buttons are ignored.</p>
+            
+            <ul style={{ lineHeight: '1.6' }}>
+              <li><span className="code-text">title:</span> Searches exclusively within the video title.</li>
+              <li><span className="code-text">desc:</span> Searches exclusively within the video description.</li>
+              <li><span className="code-text">channel:</span> Searches for the channel's standard name or their @handle.</li>
+            </ul>
+
+            <h3 style={{ marginTop: '15px', marginBottom: '5px' }}>Combining & Quotations</h3>
+            <p style={{ marginTop: '0' }}>If your search contains multiple words, wrap them in quotes. You can also use multiple operators together!</p>
+            <ul style={{ background: '#f4f4f4', padding: '10px 10px 10px 30px', borderRadius: '4px', fontFamily: 'monospace', overflowWrap: 'break-word' }}>
+              <li>title:"A Yellow Pie"</li>
+              <li>title:"plane crash" desc:Melbourne</li>
+              <li>channel:"hilarious prank" desc:memes</li>
+            </ul>
+
+            <h3 style={{ marginTop: '15px', marginBottom: '5px' }}>Match Whole Word</h3>
+            <p style={{ marginTop: '0' }}>If you check the <b>Match whole word</b> box while using operators, your query will be strictly evaluated. For example, searching <span className="code-text">title:"the game"</span> will only match videos where "the game" appears as a distinct, whole phrase.</p>
+
+            <h3 style={{ marginTop: '15px', marginBottom: '5px' }}>URL Behaviors</h3>
+            <p style={{ marginTop: '0' }}>When you use search operators, the site automatically appends <span className="code-text">&searchOperator=true</span> to the URL. If you manually change this parameter to <span className="code-text">false</span> (or remove it), the site will treat your operators as standard search text and fall back to the default search.</p>
           </div>
         </div>
       )}
