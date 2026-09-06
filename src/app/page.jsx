@@ -536,9 +536,9 @@ export default function App() {
   return (
     <div className="container">
       
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '17px' }}>
+      <div className="top-links-container">
         <a href="#" id="clearCacheLink" tabIndex="10" onClick={handleOpenModal}><b>clear cache</b></a>
-        <a href="#" id="helpLink" tabIndex="11" onClick={(e) => { e.preventDefault(); setIsHelpModalOpen(true); }}><b>help</b></a>
+        <a href="#" id="helpLink" tabIndex="11" onClick={(e) => { e.preventDefault(); setIsHelpModalOpen(true); }}><b>search operator guide</b></a>
       </div>
       <h1>youtube playlist video search</h1>
 

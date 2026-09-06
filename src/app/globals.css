@@ -155,7 +155,21 @@ button:disabled { background-color: #797979; cursor: not-allowed; color: white;}
   overflow-wrap: break-word;
 }
 
-/* Responsive desktop layout for video items */
+.top-links-container {
+  display: flex;
+  justify-content: flex-end;
+  gap: 17px;
+  overflow-wrap: break-word; 
+}
+
+/* Target the links directly to ensure long text breaks properly */
+.top-links-container a {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  text-align: right; 
+}
+
+/* Responsive adjustment for small screens */
 @media (min-width: 600px) {
   .video-item {
     flex-direction: row;
@@ -166,6 +180,14 @@ button:disabled { background-color: #797979; cursor: not-allowed; color: white;}
     margin-right: 15px;
     margin-bottom: 0;
     width: 300px; /* Locks the width so it doesn't try to resize */
+  }
+}
+
+@media (max-width: 599px) {
+  .top-links-container {
+    flex-direction: column;
+    align-items: flex-end; /* Keeps the links aligned to the right side */
+    gap: 8px; /* Slightly reduces the gap when stacked vertically */
   }
 }
 
