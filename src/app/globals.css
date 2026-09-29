@@ -153,6 +153,8 @@ button:disabled { background-color: #797979; cursor: not-allowed; color: white;}
 .code-text {
   font-family: monospace;
   overflow-wrap: break-word;
+  color: purple;
+  background-color: #f4f4f4;
 }
 
 .top-links-container {
