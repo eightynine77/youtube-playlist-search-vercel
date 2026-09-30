@@ -135,7 +135,6 @@ export async function GET(request) {
     };
 
     try {
-        do {
           let data;
           let playlistTitle = null;
           let playlistChannelTitle = null;
@@ -268,12 +267,17 @@ export async function GET(request) {
             playlistTitle = null;
             playlistChannelTitle = null;
           }
-        } while (pageToken); // Vercel keeps looping server-side until done
 
         controller.close();
       } catch (err) {
         console.error("Streaming error:", err);
-        controller.enqueue(encoder.encode(JSON.stringify({ error: "Internal Server Error" }) + '\n'));
+        controller.enqueue(
+          encoder.encode(
+            JSON.stringify({
+              error: err.message || "Internal Server Error"
+            }) + '\n'
+          )
+        );
         controller.close();
       }
     }
