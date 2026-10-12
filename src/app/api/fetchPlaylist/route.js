@@ -89,6 +89,7 @@ export async function GET(request) {
         `items(` +
           `snippet(` +
             `title,` +
+            `position,` +
             `description,` +
             `videoOwnerChannelTitle,` +
             `videoOwnerChannelId,` +
@@ -173,18 +174,29 @@ export async function GET(request) {
             // FORMAT CURRENT PAGE
             // ----------------------------------------------------------------------
 
+            
             const itemsRaw = (data.items || [])
-              .map(item => ({
-                videoId: item.snippet?.resourceId?.videoId,
-                title: item.snippet?.title,
-                channelTitle: item.snippet?.videoOwnerChannelTitle,
-                channelId: item.snippet?.videoOwnerChannelId,
-                description: item.snippet?.description || '',
-                thumbnailUrl: item.snippet?.thumbnails?.medium?.url,
-                videoUrl: item.snippet?.resourceId?.videoId
-                  ? `https://www.youtube.com/watch?v=${item.snippet.resourceId.videoId}`
-                  : null
-              }))
+              .map(item => {
+                const videoId = item.snippet?.resourceId?.videoId;
+                const position = item.snippet?.position;
+
+                return {
+                  videoId,
+                  position,
+                  title: item.snippet?.title,
+                  channelTitle: item.snippet?.videoOwnerChannelTitle,
+                  channelId: item.snippet?.videoOwnerChannelId,
+                  description: item.snippet?.description || '',
+                  thumbnailUrl: item.snippet?.thumbnails?.medium?.url,
+                  videoUrl: videoId
+                    ? `https://www.youtube.com/watch?v=${videoId}`
+                    : null,
+                  playlistIndexUrl:
+                    videoId && Number.isInteger(position)
+                      ? `https://www.youtube.com/watch?v=${videoId}&list=${playlistId}&index=${position + 1}`
+                      : null
+                };
+              })
               .filter(item => item.videoId && item.title);
 
             const channelIds = [

@@ -112,6 +112,34 @@ button:disabled { background-color: #797979; cursor: not-allowed; color: white;}
   word-break: break-word;
 }
 
+.video-title-container {
+  display: block;
+}
+
+.video-info .playlist-index-link {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  margin-left: 0.35em;
+
+  color: #cc181e;
+  font-size: inherit;
+  text-decoration: none;
+  line-height: 1;
+}
+
+.video-info .playlist-index-link:hover,
+.video-info .playlist-index-link:focus-visible {
+  color: #a31013;
+  text-decoration: none;
+}
+
+.video-info .playlist-index-icon {
+  display: block;
+  width: 1.1em;
+  height: 1.1em;
+}
+
 .video-info .channel-link {
   display: inline;
   font-size: 1.1em;
