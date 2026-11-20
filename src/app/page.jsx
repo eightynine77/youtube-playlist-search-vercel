@@ -720,16 +720,17 @@ export default function App() {
         <div id="helpModal" className="modal-overlay" onClick={() => setIsHelpModalOpen(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ overflowY: 'auto' }}>
             <button className="modal-close-btn" onClick={() => setIsHelpModalOpen(false)}>&times;</button>
-            <h2>search operator guide</h2>
-            <p>you can use advanced search operators to filter videos specifically by their title, description, or channel. When you use these, the radio buttons are ignored.</p>
+            <h2 style={{ marginBottom: '30px' }}>search operator guide</h2>
+            <p>you can use advanced search operators to filter videos specifically by their title, description, or channel. When you use these, the search filter (radio buttons) will be ignored.</p>
             
-            <ul style={{ lineHeight: '1.6' }}>
+            <p style={{ marginBottom: '0px' }}>search operators:</p>
+            <ul style={{ lineHeight: '1.6', marginTop: '0px' }}>
               <li><span className="code-text">title:</span> Searches exclusively within the video title.</li>
               <li><span className="code-text">desc:</span> Searches exclusively within the video description.</li>
               <li><span className="code-text">channel:</span> Searches for the channel's standard name or their @handle.</li>
             </ul>
 
-            <h3 style={{ marginTop: '15px', marginBottom: '5px' }}>Combining & Quotations</h3>
+            <h3 style={{ marginTop: '15px', marginBottom: '5px' }}>how to use</h3>
             <p style={{ marginTop: '0' }}>If your search contains multiple words, wrap them in quotes. You can also use multiple search operators together.</p>
             <ul style={{ background: '#f4f4f4', padding: '10px 10px 10px 30px', borderRadius: '4px', fontFamily: 'monospace', overflowWrap: 'break-word', color: 'purple' }}>
               <li>title:"a yellow pie"</li>
@@ -739,7 +740,22 @@ export default function App() {
             </ul>
 
             <h3 style={{ marginTop: '15px', marginBottom: '5px' }}>Match Whole Word</h3>
-            <p style={{ marginTop: '0' }}>If you check the <b>Match whole word</b> box while using the search operators, your search will only look for the exact words you entered. For example, searching <span className="code-text">title:"the game"</span> will only find videos with the exact phrase “the game” in the title.</p>
+            <p style={{ marginTop: '0' }}>
+              If you check the <b>match whole word</b> box 
+              while using the search operators, your search will only look for 
+              the exact words you entered. For example, 
+              searching <span className="code-text">title:"the game"</span> will only find videos 
+              with the exact phrase “the game” in the title.
+            </p>
+            <p>
+              don't worry, <b>match whole word</b> box is smart enough to focus on your search terms When you 
+              use the search operators <i>and</i> when you search without the search operators
+            </p>
+
+            <h3 style={{ marginTop: '15px', marginBottom: '5px' }}>logic switches</h3>
+            <p style={{ marginTop: '0' }}>
+              test
+            </p>
 
             <h3 style={{ marginTop: '15px', marginBottom: '5px' }}>URL Behaviors</h3>
             <p style={{ marginTop: '0' }}>When you use search operators, the site automatically appends <span className="code-text">&searchOperator=true</span> to the URL. If you manually change this parameter to <span className="code-text">false</span> (or remove it), the site will treat your operators as standard search text and fall back to the default search.</p>

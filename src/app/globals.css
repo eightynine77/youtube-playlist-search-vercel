@@ -149,6 +149,16 @@ button:disabled { background-color: #797979; cursor: not-allowed; color: white;}
   word-break: break-word;
 }
 
+.modal-content p {
+  margin-top: 0;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.modal-content p:last-child {
+  margin-bottom: 0;
+}
+
 .video-info .channel-name {
   display: inline;
   font-size: 1.1em;
