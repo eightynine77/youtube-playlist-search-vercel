@@ -6,14 +6,51 @@ import { Virtuoso } from 'react-virtuoso';
 // ============================================================================
 // FILTER LOGIC
 // ============================================================================
-function checkMatch(text, term, wholeWord) {
+function matchPart(text, term, wholeWord) {
   if (text === null || text === undefined) return false;
+  if (!term) return true;
+
+  // Handle exact phrase quotation matching
+  const quoteMatch = term.match(/^"([^"]+)"$/);
+  if (quoteMatch) {
+    const exactPhrase = quoteMatch[1];
+    if (wholeWord) {
+      const escaped = exactPhrase.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      return new RegExp(`\\b${escaped}\\b`, 'i').test(text);
+    }
+    return text.toLowerCase().includes(exactPhrase.toLowerCase());
+  }
+
+  // Unordered matching by default for standard text
+  const words = term.trim().split(/\s+/).filter(Boolean);
   if (wholeWord) {
-    const escapedTerm = term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-    const regex = new RegExp(`\\b${escapedTerm}\\b`, 'i');
-    return regex.test(text);
+    return words.every(word => {
+      const escaped = word.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      return new RegExp(`\\b${escaped}\\b`, 'i').test(text);
+    });
   } else {
-    return text.toLowerCase().includes(term.toLowerCase());
+    const lowerText = text.toLowerCase();
+    return words.every(word => lowerText.includes(word.toLowerCase()));
+  }
+}
+
+function evaluateCondition(text, condition, wholeWord) {
+  if (!text) return false;
+  const hasOr = /:or:/i.test(condition);
+  const hasAnd = /:and:/i.test(condition);
+
+  if (hasOr) {
+    const parts = condition.split(/(?:\s*:or:\s*)/i);
+    return parts.some(part => matchPart(text, part.trim(), wholeWord));
+  } else if (hasAnd) {
+    const parts = condition.split(/(?:\s*:and:\s*)/i);
+    // :and: does not support quotes, so strip them if present to avoid redundancy
+    return parts.every(part => {
+      const cleanPart = part.replace(/"/g, '').trim();
+      return matchPart(text, cleanPart, wholeWord);
+    });
+  } else {
+    return matchPart(text, condition.trim(), wholeWord);
   }
 }
 
@@ -21,7 +58,8 @@ function filterItems(items, searchTerm, wholeWordOnly, searchMode, isOperatorMod
   if (!searchTerm) return items;
 
   if (isOperatorMode) {
-    const operatorRegex = /(title|desc|channel):(?:"([^"]+)"|([^\s]+))/gi;
+    // Updated regex to support parentheses around our new operators
+    const operatorRegex = /(title|desc|channel):(?:\(([^)]+)\)|"([^"]+)"|([^\s]+))/gi;
     const matches = [...searchTerm.matchAll(operatorRegex)];
 
     if (matches.length > 0) {
@@ -29,18 +67,18 @@ function filterItems(items, searchTerm, wholeWordOnly, searchMode, isOperatorMod
         // Must match ALL detected operators
         return matches.every(match => {
           const field = match[1].toLowerCase();
-          const term = match[2] || match[3];
+          // Extract term from either parentheses, quotes, or standard unquoted match
+          const term = match[2] || match[3] || match[4]; 
 
           if (field === 'title') {
-            return checkMatch(item.title, term, wholeWordOnly);
+            return evaluateCondition(item.title, term, wholeWordOnly);
           } else if (field === 'desc') {
-            return checkMatch(item.description, term, wholeWordOnly);
+            return evaluateCondition(item.description, term, wholeWordOnly);
           } else if (field === 'channel') {
-            // Channel logic: Match name OR handle
-            const matchName = checkMatch(item.channelTitle, term, wholeWordOnly);
+            const matchName = evaluateCondition(item.channelTitle, term, wholeWordOnly);
             const cleanHandle = item.channelHandle ? item.channelHandle.replace(/^@/, '') : '';
             const cleanSearch = term.replace(/^@/, '');
-            const matchHandle = checkMatch(cleanHandle, cleanSearch, wholeWordOnly);
+            const matchHandle = evaluateCondition(cleanHandle, cleanSearch, wholeWordOnly);
             
             return matchName || matchHandle;
           }
@@ -50,20 +88,20 @@ function filterItems(items, searchTerm, wholeWordOnly, searchMode, isOperatorMod
     }
   }
 
-  // Standard mode: Fallback to radio buttons and whole word logic
+  // Standard mode: Fallback to radio buttons with new unordered evaluation logic
   return items.filter(item => {
     switch (searchMode) {
-      case 'title': return checkMatch(item.title, searchTerm, wholeWordOnly);
-      case 'description': return checkMatch(item.description, searchTerm, wholeWordOnly);
-      case 'both': return checkMatch(item.title, searchTerm, wholeWordOnly) || checkMatch(item.description, searchTerm, wholeWordOnly);
+      case 'title': return evaluateCondition(item.title, searchTerm, wholeWordOnly);
+      case 'description': return evaluateCondition(item.description, searchTerm, wholeWordOnly);
+      case 'both': return evaluateCondition(item.title, searchTerm, wholeWordOnly) || evaluateCondition(item.description, searchTerm, wholeWordOnly);
       case 'channel': {
-        const matchName = checkMatch(item.channelTitle, searchTerm, wholeWordOnly);
+        const matchName = evaluateCondition(item.channelTitle, searchTerm, wholeWordOnly);
         const cleanHandle = item.channelHandle ? item.channelHandle.replace(/^@/, '') : '';
         const cleanSearch = searchTerm.replace(/^@/, '');
-        const matchHandle = checkMatch(cleanHandle, cleanSearch, wholeWordOnly);
+        const matchHandle = evaluateCondition(cleanHandle, cleanSearch, wholeWordOnly);
         return matchName || matchHandle;
       }
-      default: return checkMatch(item.title, searchTerm, wholeWordOnly);
+      default: return evaluateCondition(item.title, searchTerm, wholeWordOnly);
     }
   });
 }
@@ -340,31 +378,51 @@ export default function App() {
   };
 
   // --- MAIN SEARCH & CACHE LOGIC ---
-  const handleSearch = async (e, overrideParams = null) => {
-    if (e) e.preventDefault();
-    abortRef.current = false;
+      const handleSearch = async (e, overrideParams = null) => {
+      if (e) e.preventDefault();
+      abortRef.current = false;
 
-      // Use URL parameters if overriding on page load, otherwise fall back to standard element states
-      const currentPlaylistUrl = overrideParams ? overrideParams.playlistUrl : playlistUrl;
-      const currentSearchTerm = overrideParams ? overrideParams.searchTerm : searchTerm;
-      const currentWholeWordMatch = overrideParams ? overrideParams.wholeWordMatch : wholeWordMatch;
-      const currentSearchMode = overrideParams ? overrideParams.searchMode : searchMode;
+        const currentPlaylistUrl = overrideParams ? overrideParams.playlistUrl : playlistUrl;
+        const currentSearchTerm = overrideParams ? overrideParams.searchTerm : searchTerm;
+        const currentWholeWordMatch = overrideParams ? overrideParams.wholeWordMatch : wholeWordMatch;
+        const currentSearchMode = overrideParams ? overrideParams.searchMode : searchMode;
     
-      const operatorRegex = /(title|desc|channel):(?:"([^"]+)"|([^\s]+))/gi;
-      const currentIsOperatorMode = overrideParams && overrideParams.isOperatorMode !== undefined 
-        ? overrideParams.isOperatorMode 
-        : operatorRegex.test(currentSearchTerm);
+        // --- NEW VALIDATION BLOCK ---
+        if (currentSearchTerm) {
+          const hasOr = /:or:/i.test(currentSearchTerm);
+          const hasAnd = /:and:/i.test(currentSearchTerm);
+        
+          if (hasOr && hasAnd) {
+            alert("you cannot use both :or: and :and: at the same time.");
+            return;
+          }
 
-      setActiveSearchTerm(currentSearchTerm);
-      setActiveWholeWordMatch(currentWholeWordMatch);
-      setActiveSearchMode(currentSearchMode);
-      setActiveIsOperatorMode(currentIsOperatorMode); // Save the active state here
+          // Prevent using :or: / :and: outside of field operators to combine them
+          const operatorRegexForValidation = /(title|desc|channel):(?:\(([^)]+)\)|"([^"]+)"|([^\s]+))/gi;
+          const stringWithoutFields = currentSearchTerm.replace(operatorRegexForValidation, '');
+          if (currentSearchTerm.match(operatorRegexForValidation) && /:or:|:and:/i.test(stringWithoutFields)) {
+            alert("you cannot use the :or: and :and: operator to combine different search operators together");
+            return;
+          }
+        }
+        // ----------------------------
+
+        // Updated regex to support parenthesis
+        const operatorRegex = /(title|desc|channel):(?:\(([^)]+)\)|"([^"]+)"|([^\s]+))/gi;
+        const currentIsOperatorMode = overrideParams && overrideParams.isOperatorMode !== undefined 
+          ? overrideParams.isOperatorMode 
+          : operatorRegex.test(currentSearchTerm);
+
+        setActiveSearchTerm(currentSearchTerm);
+        setActiveWholeWordMatch(currentWholeWordMatch);
+        setActiveSearchMode(currentSearchMode);
+        setActiveIsOperatorMode(currentIsOperatorMode); 
     
-      const listId = extractPlaylistId(currentPlaylistUrl);
-      if (!listId) {
-        showStatus('Invalid YouTube Playlist URL', 'error');
-        return;
-      }
+        const listId = extractPlaylistId(currentPlaylistUrl);
+        if (!listId) {
+          showStatus('Invalid YouTube Playlist URL', 'error');
+          return;
+        }
 
       // ONLY update the browser URL if the search was manually triggered by clicking the search button
       if (!overrideParams) {
