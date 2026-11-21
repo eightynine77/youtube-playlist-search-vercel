@@ -324,6 +324,16 @@ export default function App() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  //this is for the cached playlist modal pop-up
+  function selectText(event) {
+    const selection = window.getSelection();
+    const range = document.createRange();
+
+    range.selectNodeContents(event.currentTarget);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
   // URL Parameter Detection and Auto-Search on Mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -704,7 +714,7 @@ export default function App() {
                     <div className="cached-playlist-info">
                       <strong>{list.playlistTitle || 'Unknown Title'}</strong>
                       <span>By: {list.channelTitle || 'Unknown Channel'}</span>
-                      <span className="playlist-url">https://www.youtube.com/playlist?list={list.playlistId}</span>
+                      <span className="playlist-url" onClick={selectText}>https://www.youtube.com/playlist?list={list.playlistId}</span>
                     </div>
                     <button className="delete-cache-btn" onClick={() => handleDeleteCache(list.playlistId)}>Delete</button>
                   </li>
