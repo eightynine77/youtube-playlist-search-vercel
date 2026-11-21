@@ -728,7 +728,7 @@ export default function App() {
 
       {isHelpModalOpen && (
         <div id="helpModal" className="modal-overlay" onClick={() => setIsHelpModalOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ overflowY: 'auto' }}>
+          <div className="modal-content help-modal-content" onClick={(e) => e.stopPropagation()} style={{ overflowY: 'auto' }}>
             <button className="modal-close-btn" onClick={() => setIsHelpModalOpen(false)}>&times;</button>
             <h2 style={{ marginBottom: '30px' }}>search operator guide</h2>
 
@@ -791,7 +791,7 @@ export default function App() {
             <p style={{ marginTop: '0' }}>If your search contains multiple words, wrap them in quotes. You can also use multiple search operators together.</p>
 
             <p style={{ marginBottom: '0px' }}>example usage:</p>
-            <ul style={{ marginTop: '0px', background: '#f4f4f4', padding: '10px 10px 10px 30px', borderRadius: '4px', fontFamily: 'monospace', overflowWrap: 'break-word', color: 'purple' }}>
+            <ul className='standard-operator-help' style={{ marginTop: '0px', background: '#f4f4f4', padding: '10px 10px 10px 30px', borderRadius: '4px', fontFamily: 'monospace', overflowWrap: 'break-word', color: 'purple' }}>
               <li>title:"a yellow pie"</li>
               <li>title:plane desc:Melbourne</li>
               <li>channel:"hilarious pranks" desc:"funny memes"</li>
@@ -840,7 +840,7 @@ export default function App() {
             </p>
 
             <p style={{ marginBottom: '0px' }}>example usage:</p>
-            <ul style={{ marginTop: '0px', background: '#f4f4f4', padding: '10px 10px 10px 30px', borderRadius: '4px', fontFamily: 'monospace', overflowWrap: 'break-word', color: 'purple' }}>
+            <ul className='standard-operator-help' style={{ marginTop: '0px', background: '#f4f4f4', padding: '10px 10px 10px 30px', borderRadius: '4px', fontFamily: 'monospace', overflowWrap: 'break-word', color: 'purple' }}>
               <li>car :or: "new dashcam" :or: review</li>
               <li>building :and: "in decline" :and: tour</li>
               <li>spongebob :and: themesong :and: compilation</li>

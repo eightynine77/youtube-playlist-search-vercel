@@ -231,20 +231,6 @@ button:disabled { background-color: #797979; cursor: not-allowed; color: white;}
   word-break: break-word;
 }
 
-.modal-content p {
-  margin-top: 0;
-  margin-bottom: 12px;
-  line-height: 1.5;
-}
-
-.modal-content p:last-child {
-  margin-bottom: 0;
-}
-
-.modal-content ul {
-  font-size: 0.85rem;
-}
-
 .video-info .channel-name {
   display: inline;
   font-size: 1.1em;
@@ -331,6 +317,7 @@ button:disabled { background-color: #797979; cursor: not-allowed; color: white;}
   z-index: 1000;
 }
 
+/* main modal */
 .modal-content {
   background: #fff;
   padding: 20px 30px;
@@ -346,6 +333,21 @@ button:disabled { background-color: #797979; cursor: not-allowed; color: white;}
 
 .modal-content h2 {
   margin-top: 0;
+}
+
+/* Help guide modal */
+.help-modal-content p {
+  margin-top: 0;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.help-modal-content p:last-child {
+  margin-bottom: 0;
+}
+
+.standard-operator-help {
+  font-size: 0.85rem;
 }
 
 .modal-close-btn {
