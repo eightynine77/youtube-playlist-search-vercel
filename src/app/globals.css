@@ -344,6 +344,10 @@ button:disabled { background-color: #797979; cursor: not-allowed; color: white;}
   flex-direction: column;
 }
 
+.modal-content h2 {
+  margin-top: 0;
+}
+
 .modal-close-btn {
   position: absolute;
   top: 10px;
@@ -356,9 +360,7 @@ button:disabled { background-color: #797979; cursor: not-allowed; color: white;}
   cursor: pointer;
 }
 
-.modal-content h2 {
-  margin-top: 0;
-}
+
 
 .modal-content 
 
