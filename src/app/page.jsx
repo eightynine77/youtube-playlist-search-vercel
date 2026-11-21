@@ -730,13 +730,17 @@ export default function App() {
               <li><span className="code-text">channel:</span> Searches for the channel's standard name or their @handle.</li>
             </ul>
 
-            <h3 style={{ marginTop: '15px', marginBottom: '5px' }}>how to use</h3>
+            <h3 style={{ marginTop: '15px', marginBottom: '5px' }}>how to use the search operators</h3>
             <p style={{ marginTop: '0' }}>If your search contains multiple words, wrap them in quotes. You can also use multiple search operators together.</p>
-            <ul style={{ background: '#f4f4f4', padding: '10px 10px 10px 30px', borderRadius: '4px', fontFamily: 'monospace', overflowWrap: 'break-word', color: 'purple' }}>
+
+            <p style={{ marginBottom: '0px' }}>example usage:</p>
+            <ul style={{ marginTop: '0px', background: '#f4f4f4', padding: '10px 10px 10px 30px', borderRadius: '4px', fontFamily: 'monospace', overflowWrap: 'break-word', color: 'purple' }}>
               <li>title:"a yellow pie"</li>
-              <li>title:"plane crash" desc:Melbourne</li>
-              <li>channel:"hilarious pranks" desc:memes</li>
+              <li>title:plane desc:Melbourne</li>
+              <li>channel:"hilarious pranks" desc:"funny memes"</li>
               <li>title:granade channel:@gaming_centre</li>
+              <li>title:air title:sky title:pilot</li>
+              <li>title:super desc:"easy to use" channel:life</li>
             </ul>
 
             <h3 style={{ marginTop: '15px', marginBottom: '5px' }}>Match Whole Word</h3>
@@ -754,8 +758,39 @@ export default function App() {
 
             <h3 style={{ marginTop: '15px', marginBottom: '5px' }}>logic switches</h3>
             <p style={{ marginTop: '0' }}>
-              test
+              there is the <span className='code-text'>:or:</span> and <span className='code-text'>:and:</span> switches. 
+              these two are custom version of the <span className='code-text'>OR</span> and <span className='code-text'>AND</span> switches 
+              commonly found on most search engines and site searches. 
             </p>
+
+            <p style={{ marginBottom: '0px' }}>logic switches:</p>
+            <ul style={{ lineHeight: '1.6', marginTop: '0px' }}>
+              <li><span className="code-text">:or:</span> Finds results containing at least one of the search terms. 
+              Use this to broaden your search. for example: searching <span className='code-text'>pie :or: tutorial</span> will 
+              give you videos with the word "pie", "tutorial", or both.
+              </li>
+              <li><span className="code-text">:and:</span> Finds only results containing all of the selected search terms. 
+              Use this to narrow your search. for example: searching <span className='code-text'>storm :and: footage</span> will 
+              give you videos with the word that strictly contains both "storm" and "footage"
+              </li>
+            </ul>
+
+            <h3 style={{ marginTop: '15px', marginBottom: '5px' }}>how to use the switches</h3>
+            <p style={{ marginTop: '0' }}>
+              aside from using it like a regular <span className='code-text'>OR</span> and <span className='code-text'>AND</span> logic switch, you 
+              can also uses them alongside <span className='code-text'>title:</span>, <span className='code-text'>desc:</span>, 
+              and <span className='code-text'>channel:</span> operators.
+            </p>
+
+            <p style={{ marginBottom: '0px' }}>example usage:</p>
+            <ul style={{ marginTop: '0px', background: '#f4f4f4', padding: '10px 10px 10px 30px', borderRadius: '4px', fontFamily: 'monospace', overflowWrap: 'break-word', color: 'purple' }}>
+              <li>car :or: dashcam :or: review</li>
+              <li>spongebob :and: themesong :and: compilation</li>
+              <li>title:(granade :or: launcher)</li>
+              <li>desc:(csgo :and: skins)</li>
+              <li>channel:(mass :and: wave)</li>
+              <li>title:(mass :or: wave) channel:(caught :or: camera) desc:(watch :or: live)</li>
+            </ul>
 
             <h3 style={{ marginTop: '15px', marginBottom: '5px' }}>URL Behaviors</h3>
             <p style={{ marginTop: '0' }}>When you use search operators, the site automatically appends <span className="code-text">&searchOperator=true</span> to the URL. If you manually change this parameter to <span className="code-text">false</span> (or remove it), the site will treat your operators as standard search text and fall back to the default search.</p>
