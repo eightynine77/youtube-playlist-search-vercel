@@ -631,7 +631,7 @@ export default function App() {
         <a href="#" id="clearCacheLink" tabIndex="10" onClick={handleOpenModal}><b>clear cache</b></a>
         <a href="#" id="helpLink" tabIndex="11" onClick={(e) => { e.preventDefault(); setIsHelpModalOpen(true); }}><b>search operator guide</b></a>
       </div>
-      <h1>youtube playlist video search</h1>
+      <a href="/" style={{ textDecoration: 'none', color: 'black' }}><h1>youtube playlist video search</h1></a>
 
       <form id="searchForm" onSubmit={handleSearch}>
         <label htmlFor="playlistUrl">YouTube Playlist Link:</label>
@@ -721,7 +721,54 @@ export default function App() {
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ overflowY: 'auto' }}>
             <button className="modal-close-btn" onClick={() => setIsHelpModalOpen(false)}>&times;</button>
             <h2 style={{ marginBottom: '30px' }}>search operator guide</h2>
-            <p>you can use advanced search operators to filter videos specifically by their title, description, or channel. When you use these, the search filter (radio buttons) will be ignored.</p>
+
+            <div className="info-section">
+              <div className="info-scroll">
+                <svg
+                className="info-icon"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 202.978 202.978"
+                aria-label="Information"
+                role="img"
+              >
+                <path
+                  fill="white"
+                  d="M100.942,0.001C44.9,0.304-0.297,45.98,0.006,102.031
+                  c0.293,56.051,45.998,101.238,102.02,100.945
+                  c56.081-0.303,101.248-45.978,100.945-102.02
+                  C202.659,44.886,157.013-0.292,100.942,0.001z
+                  M101.948,186.436c-46.916,0.234-85.108-37.576-85.372-84.492
+                  c-0.244-46.907,37.537-85.157,84.453-85.411
+                  c46.926-0.254,85.167,37.596,85.421,84.483
+                  C186.695,147.951,148.855,186.182,101.948,186.436z
+                  M116.984,145.899l-0.42-75.865l-39.149,0.254l0.078,16.6
+                  l10.63-0.059l0.313,59.237l-11.275,0.039l0.088,15.857
+                  l49.134-0.264l-0.098-15.847L116.984,145.899z
+                  M102.065,58.837c9.575-0.039,15.349-6.448,15.3-14.323
+                  c-0.254-8.07-5.882-14.225-15.095-14.186
+                  c-9.184,0.059-15.173,6.292-15.134,14.362
+                  C87.185,52.555,93.028,58.906,102.065,58.837z"
+                />
+              </svg>
+                <p>
+                  <b>note:</b> the default normal search and searching with search operators 
+                uses unordered search by default. for example, if you search: <span className='code-text'>sports channel</span>, 
+                the search looks for both words, <b>regardless of where they appear or in what order.</b>
+                </p>
+                <p>
+                  however, if you use quotations (for example: <span className='code-text'>"world wide news"</span>, 
+                <span className='code-text'>title:"walking tonight"</span>), then the search will appear together and in the same order.<br />
+                so, if you search <span className='code-text'>"basic arrangements"</span>, the search will strictly look for the phrase "basic arrangements"
+                </p>
+              </div>
+            </div>
+
+
+            <p style={{ marginTop: '12px' }}>
+              you can use advanced search operators to filter videos specifically by their 
+              title, description, or channel. When you use these, the search filter (radio buttons) 
+              will be ignored.
+            </p>
             
             <p style={{ marginBottom: '0px' }}>search operators:</p>
             <ul style={{ lineHeight: '1.6', marginTop: '0px' }}>
@@ -784,7 +831,8 @@ export default function App() {
 
             <p style={{ marginBottom: '0px' }}>example usage:</p>
             <ul style={{ marginTop: '0px', background: '#f4f4f4', padding: '10px 10px 10px 30px', borderRadius: '4px', fontFamily: 'monospace', overflowWrap: 'break-word', color: 'purple' }}>
-              <li>car :or: dashcam :or: review</li>
+              <li>car :or: "new dashcam" :or: review</li>
+              <li>building :and: "in decline" :and: tour</li>
               <li>spongebob :and: themesong :and: compilation</li>
               <li>title:(granade :or: launcher)</li>
               <li>desc:(csgo :and: skins)</li>

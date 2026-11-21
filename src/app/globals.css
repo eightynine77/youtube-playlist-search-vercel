@@ -140,6 +140,88 @@ button:disabled { background-color: #797979; cursor: not-allowed; color: white;}
   height: 1.1em;
 }
 
+
+.info-section {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 12px;
+}
+
+.info-icon {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  color: #1D91C0;
+  margin-top: 10px;
+}
+
+.info-scroll {
+  flex: 1 1 0;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 12em;
+  box-sizing: border-box;
+
+  line-height: 1.5;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+
+  background-color: #1D91C0;
+  color: white;
+  padding: 12px;
+  border-radius: 6px;
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.8) rgba(0,0,0,0.15);
+}
+
+.info-scroll p {
+  margin-top: 0;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.info-scroll p:last-child {
+  margin-bottom: 0;
+}
+
+.info-scroll .code-text {
+  color: white;
+  background-color: rgba(0,0,0,0.15);
+  overflow-wrap: anywhere;
+}
+
+.info-scroll::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.15);
+}
+
+.info-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(255,255,255,0.8);
+  border: 2px solid #1D91C0;
+}
+
+.info-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: white;
+}
+
+@media (max-width: 599px) {
+  .info-section {
+    gap: 8px;
+  }
+
+  .info-icon {
+    flex-basis: 28px;
+    width: 28px;
+    height: 28px;
+  }
+}
+
+
 .video-info .channel-link {
   display: inline;
   font-size: 1.1em;
