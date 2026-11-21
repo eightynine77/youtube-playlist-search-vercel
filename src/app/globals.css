@@ -241,6 +241,10 @@ button:disabled { background-color: #797979; cursor: not-allowed; color: white;}
   margin-bottom: 0;
 }
 
+.modal-content ul {
+  font-size: 0.85rem;
+}
+
 .video-info .channel-name {
   display: inline;
   font-size: 1.1em;
@@ -275,6 +279,7 @@ button:disabled { background-color: #797979; cursor: not-allowed; color: white;}
   overflow-wrap: break-word;
   color: purple;
   background-color: #f4f4f4;
+  font-size: 0.85rem;
 }
 
 .top-links-container {
@@ -354,6 +359,8 @@ button:disabled { background-color: #797979; cursor: not-allowed; color: white;}
 .modal-content h2 {
   margin-top: 0;
 }
+
+.modal-content 
 
 .cached-playlist-list {
   list-style: none;

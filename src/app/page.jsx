@@ -756,9 +756,9 @@ export default function App() {
                 the search looks for both words, <b>regardless of where they appear or in what order.</b>
                 </p>
                 <p>
-                  however, if you use quotations (for example: <span className='code-text'>"world wide news"</span>, 
-                <span className='code-text'>title:"walking tonight"</span>), then the search will appear together and in the same order.<br />
-                so, if you search <span className='code-text'>"basic arrangements"</span>, the search will strictly look for the phrase "basic arrangements"
+                  however, if you use quotations 
+                  (for example: <span className='code-text'>"world wide news"</span>, <span className='code-text'>title:"walking tonight"</span>), then the search will appear together and in the same order.<br />
+                so, if you search <span className='code-text'>"basic arrangements"</span>, the search will look for the phrase "basic arrangements"
                 </p>
               </div>
             </div>
