@@ -360,10 +360,6 @@ button:disabled { background-color: #797979; cursor: not-allowed; color: white;}
   cursor: pointer;
 }
 
-
-
-.modal-content 
-
 .cached-playlist-list {
   list-style: none;
   padding: 0;
