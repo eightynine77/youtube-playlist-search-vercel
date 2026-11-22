@@ -44,11 +44,8 @@ function evaluateCondition(text, condition, wholeWord) {
     return parts.some(part => matchPart(text, part.trim(), wholeWord));
   } else if (hasAnd) {
     const parts = condition.split(/(?:\s*:and:\s*)/i);
-    // :and: does not support quotes, so strip them if present to avoid redundancy
-    return parts.every(part => {
-      const cleanPart = part.replace(/"/g, '').trim();
-      return matchPart(text, cleanPart, wholeWord);
-    });
+    // Ban lifted: Quotes are now preserved for :and: switches
+    return parts.every(part => matchPart(text, part.trim(), wholeWord));
   } else {
     return matchPart(text, condition.trim(), wholeWord);
   }
@@ -58,16 +55,15 @@ function filterItems(items, searchTerm, wholeWordOnly, searchMode, isOperatorMod
   if (!searchTerm) return items;
 
   if (isOperatorMode) {
-    // Updated regex to support parentheses around our new operators
-    const operatorRegex = /(title|desc|channel):(?:\(([^)]+)\)|"([^"]+)"|([^\s]+))/gi;
+    // Regex updated: "([^"]+)" changed to ("[^"]+") to retain quotes in match[3]
+    const operatorRegex = /(title|desc|channel):(?:\(([^)]+)\)|("[^"]+")|([^\s]+))/gi;
     const matches = [...searchTerm.matchAll(operatorRegex)];
 
     if (matches.length > 0) {
       return items.filter(item => {
-        // Must match ALL detected operators
+        // Must match ALL detected operators (this allows multiple operators like title:x title:y to work)
         return matches.every(match => {
           const field = match[1].toLowerCase();
-          // Extract term from either parentheses, quotes, or standard unquoted match
           const term = match[2] || match[3] || match[4]; 
 
           if (field === 'title') {
@@ -77,7 +73,8 @@ function filterItems(items, searchTerm, wholeWordOnly, searchMode, isOperatorMod
           } else if (field === 'channel') {
             const matchName = evaluateCondition(item.channelTitle, term, wholeWordOnly);
             const cleanHandle = item.channelHandle ? item.channelHandle.replace(/^@/, '') : '';
-            const cleanSearch = term.replace(/^@/, '');
+            // Globally strip '@' so whole word boundaries (\b) evaluate cleanly on handles
+            const cleanSearch = term.replace(/@/g, '');
             const matchHandle = evaluateCondition(cleanHandle, cleanSearch, wholeWordOnly);
             
             return matchName || matchHandle;
@@ -97,7 +94,8 @@ function filterItems(items, searchTerm, wholeWordOnly, searchMode, isOperatorMod
       case 'channel': {
         const matchName = evaluateCondition(item.channelTitle, searchTerm, wholeWordOnly);
         const cleanHandle = item.channelHandle ? item.channelHandle.replace(/^@/, '') : '';
-        const cleanSearch = searchTerm.replace(/^@/, '');
+        // Globally strip '@' here as well
+        const cleanSearch = searchTerm.replace(/@/g, '');
         const matchHandle = evaluateCondition(cleanHandle, cleanSearch, wholeWordOnly);
         return matchName || matchHandle;
       }
@@ -408,7 +406,7 @@ export default function App() {
           }
 
           // Prevent using :or: / :and: outside of field operators to combine them
-          const operatorRegexForValidation = /(title|desc|channel):(?:\(([^)]+)\)|"([^"]+)"|([^\s]+))/gi;
+          const operatorRegexForValidation = /(title|desc|channel):(?:\(([^)]+)\)|("[^"]+")|([^\s]+))/gi;
           const stringWithoutFields = currentSearchTerm.replace(operatorRegexForValidation, '');
           if (currentSearchTerm.match(operatorRegexForValidation) && /:or:|:and:/i.test(stringWithoutFields)) {
             alert("you cannot use the :or: and :and: operator to combine different search operators together");
@@ -417,8 +415,8 @@ export default function App() {
         }
         // ----------------------------
 
-        // Updated regex to support parenthesis
-        const operatorRegex = /(title|desc|channel):(?:\(([^)]+)\)|"([^"]+)"|([^\s]+))/gi;
+        // Updated regex to retain quotes
+        const operatorRegex = /(title|desc|channel):(?:\(([^)]+)\)|("[^"]+")|([^\s]+))/gi;
         const currentIsOperatorMode = overrideParams && overrideParams.isOperatorMode !== undefined 
           ? overrideParams.isOperatorMode 
           : operatorRegex.test(currentSearchTerm);
@@ -686,16 +684,22 @@ export default function App() {
       <div id="results" className="video-list">
         {isCachedSearch ? (
           /* Render a native list for cached items */
-          filteredItems.map((item, index) => (
-            <VideoRow key={`${item.videoId || index}`} item={item} />
-          ))
+        filteredItems.map((item, index) => (
+          <VideoRow
+            key={item.playlistItemId || `${item.videoId}-${index}`}
+            item={item}
+          />
+        ))
         ) : (
           /* Render Virtuoso for streaming network items */
-          <Virtuoso
-            useWindowScroll
-            data={filteredItems}
-            itemContent={(index, item) => <VideoRow item={item} />}
-          />
+        <Virtuoso
+          useWindowScroll
+          data={filteredItems}
+          computeItemKey={(index, item) =>
+            item.playlistItemId || `${item.videoId}-${index}`
+          }
+          itemContent={(index, item) => <VideoRow item={item} />}
+        />
         )}
       </div>
 

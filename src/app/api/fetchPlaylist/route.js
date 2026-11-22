@@ -87,6 +87,7 @@ export async function GET(request) {
         `nextPageToken,` +
         `pageInfo(totalResults),` +
         `items(` +
+          `id,` +
           `snippet(` +
             `title,` +
             `position,` +
@@ -181,6 +182,7 @@ export async function GET(request) {
                 const position = item.snippet?.position;
 
                 return {
+                  playlistItemId: item.id,
                   videoId,
                   position,
                   title: item.snippet?.title,
