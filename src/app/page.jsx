@@ -777,7 +777,6 @@ export default function App() {
               </div>
             </div>
 
-
             <p style={{ marginTop: '12px' }}>
               you can use advanced search operators to filter videos specifically by their 
               title, description, or channel. When you use these, the search filter (radio buttons) 
@@ -848,11 +847,11 @@ export default function App() {
               <li>car :or: "new dashcam" :or: review</li>
               <li>building :and: "in decline" :and: tour</li>
               <li>spongebob :and: themesong :and: compilation</li>
-              <li>title:(granade :or: launcher)</li>
-              <li>desc:(csgo :and: skins)</li>
-              <li>channel:(mass :and: wave)</li>
-              <li>title:(mass :or: wave) channel:(caught :or: camera) desc:(watch :or: live)</li>
+              <li>title:(granade :or: "launcher gun")</li>
+              <li>desc:("basic csgo" :and: guide)</li>
+              <li>channel:(mass :or: @wave)</li>
             </ul>
+            <p style={{ marginBottom: '0px' }}><b>note:</b> when you use <span className='code-text'>:or:</span> or <span className='code-text'>:and:</span> switches with the search operators, you can't combine other operators. for example: <span className='code-text'>title(dog :and: house) desc:(repair :and: tutorial)</span></p> 
 
             <h3 style={{ marginTop: '15px', marginBottom: '5px' }}>URL Behaviors</h3>
             <p style={{ marginTop: '0' }}>When you use search operators, the site automatically appends <span className="code-text">&searchOperator=true</span> to the URL. If you manually change this parameter to <span className="code-text">false</span> (or remove it), the site will treat your operators as standard search text and fall back to the default search.</p>
